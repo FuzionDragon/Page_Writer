@@ -1,0 +1,135 @@
+$foreground-color: #C0C2C3;
+$background-color: #293E40;
+$highlight-color: #546A8D;
+$mediaMaxWidth: 520px;
+
+@mixin section {
+  padding-top: 8em;
+  padding-left: 2em;
+  padding-right: 2em;
+}
+
+@mixin border {
+  background-color: light-dark($foreground-color, $background-color);
+  border: 2px solid $highlight-color;
+  border-radius: 8px;
+}
+
+@mixin nav {
+  @include border;
+  margin: 1em;
+  padding: 0.5em;
+  text-align: left;
+  z-index: 9999;
+  flex-grow: 2;
+  position: fixed;
+}
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-size: 18px;
+  color-scheme: light dark;
+  color: light-dark($background-color, $foreground-color);
+  background-color: light-dark($foreground-color, $background-color);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  text-align: center;
+  margin: auto;
+  min-width: 320px;
+  min-height: 100vh;
+  padding: 18px;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+a {
+  font-weight: 500;
+  color: light-dark($background-color, $foreground-color);
+  text-decoration: inherit;
+  padding: 5px;
+
+  &:hover {
+    color: $highlight-color;
+  }
+}
+
+textarea {
+  @include border;
+  color: light-dark($background-color, $foreground-color);
+  width: 100%;
+  font-size: 1em;
+  padding: 1em;
+  resize: none;
+}
+
+#home {
+  @include section;
+}
+
+#projects {
+  @include section;
+}
+
+#skills {
+  @include section;
+}
+
+#about {
+  @include section;
+}
+
+#contacts {
+  @include section;
+  padding-bottom: 8em;
+}
+
+#leftnav {
+  @include nav;
+  top: 0;
+  left: 0;
+}
+
+#rightnav {
+  @include nav;
+  top: 0;
+  right: 0;
+}
+
+@media (max-width: $mediaMaxWidth) {
+  #rightnav {
+    right: auto;
+    left: 47%;
+    transform: translateX(-50%);
+    top: 4em;
+  }
+}
+      
+.card {
+  @include border;
+  margin: 2em;
+  padding: 2em;
+  max-width: 20em;
+  min-width: 20%;
+}
+
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-content: space-between;
+}
