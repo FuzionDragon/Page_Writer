@@ -1,6 +1,6 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 use dirs::home_dir;
+use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 
 mod brain_compiler;
 use brain_compiler::submit_snippet;
@@ -27,7 +27,7 @@ impl serde::Serialize for Error {
 }
 
 #[tauri::command]
-async fn page_compiler_entry(snippet: String) -> Result<(), Error>{
+async fn page_compiler_entry(snippet: String) -> Result<(), Error> {
   let path = home_dir()
     .expect("Unable to find home directory")
     .join(PATH)
@@ -47,11 +47,16 @@ async fn page_compiler_entry(snippet: String) -> Result<(), Error>{
   Ok(())
 }
 
+#[tauri::command]
+fn print_test() {
+  println!("Testing");
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![page_compiler_entry])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+  tauri::Builder::default()
+    .plugin(tauri_plugin_opener::init())
+    .invoke_handler(tauri::generate_handler![page_compiler_entry, print_test])
+    .run(tauri::generate_context!())
+    .expect("error while running tauri application");
 }

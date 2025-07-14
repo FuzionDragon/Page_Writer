@@ -10,6 +10,7 @@
     "tauri": "tauri"
   },
   "devDependencies": {
+    "@tauri-apps/api": "^2.6.0",
     "@tauri-apps/cli": "^2",
     "marked": "^16.0.0",
     "sass": "^1.89.2",
