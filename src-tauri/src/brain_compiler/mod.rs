@@ -1,3 +1,4 @@
+use anyhow::Ok;
 use sqlx::SqlitePool;
 use std::collections::{HashMap, HashSet};
 use stop_words::{get, LANGUAGE};
@@ -21,6 +22,11 @@ pub async fn submit_snippet(snippet: &str, db: &SqlitePool) -> Result<(), anyhow
             .await?
             .is_empty();
 
+    if snippet.is_empty() {
+      println!("Snippet is empty");
+      return Ok(())
+    };
+
     let first_line = snippet.lines().collect::<Vec<&str>>()[0];
     let title: Option<&str> = first_line.strip_prefix('#');
 
@@ -33,17 +39,13 @@ pub async fn submit_snippet(snippet: &str, db: &SqlitePool) -> Result<(), anyhow
         sqlite_interface::init(db).await?;
 
         if let Some(title) = title {
-            sqlite_interface::add_document(db, title, snippet, input_tfidf_data, input_rake_data)
-                .await?;
+            let document_exists = !sqlite_interface::add_document(db, title.trim(), snippet, input_tfidf_data, input_rake_data).await?;
+            if document_exists {
+                println!("Document with that title already exists");
+            }
         } else {
-            sqlite_interface::add_document(
-                db,
-                "first document",
-                snippet,
-                input_tfidf_data,
-                input_rake_data,
-            )
-            .await?;
+            let first_document = "first document";
+            sqlite_interface::add_document(db, first_document, snippet, input_tfidf_data, input_rake_data).await?;
         }
     } else {
         let corpus_tfidf_data = sqlite_interface::load_tfidf_data(db).await?;
@@ -77,6 +79,7 @@ pub async fn submit_snippet(snippet: &str, db: &SqlitePool) -> Result<(), anyhow
                     scores[0].0, scores[0].1
                 );
                 println!("Creating new document");
+                sqlite_interface::add_document(db, first_line.trim(), snippet, input_tfidf_data, input_rake_data).await?;
             }
         }
     }

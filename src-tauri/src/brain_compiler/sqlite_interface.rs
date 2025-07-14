@@ -224,21 +224,30 @@ pub async fn update_rake_data(db: &SqlitePool, phrases: Vec<String>, document: &
     Ok(())
 }
 
-pub async fn add_snippet(db: &SqlitePool, snippet: &str, document: &str) -> Result<()> {
-    sqlx::query("INSERT OR IGNORE INTO Document (document_name) VALUES ($1) ON CONFLICT(document_name) DO NOTHING;")
-    .bind(document)
+pub async fn add_snippet_with_id(db: &SqlitePool, snippet: &str, document_id: i32) -> Result<()> {
+    sqlx::query("INSERT OR IGNORE INTO Snippet (snippet, document_id) VALUES ($1, $2) ON CONFLICT(snippet, document_id) DO NOTHING;")
+    .bind(snippet)
+    .bind(document_id)
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn add_snippet(db: &SqlitePool, snippet: &str, document_name: &str) -> Result<()> {
+    sqlx::query("INSERT INTO Document (document_name) VALUES ($1);")
+    .bind(document_name)
     .execute(db)
     .await?;
 
     let document_row = sqlx::query_as::<_, DocumentRow>(
         "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
     )
-    .bind(document)
+    .bind(document_name)
     .fetch_one(db)
     .await?;
 
     let document_id = document_row.document_id;
-
     sqlx::query("INSERT OR IGNORE INTO Snippet (snippet, document_id) VALUES ($1, $2) ON CONFLICT(snippet, document_id) DO NOTHING;")
     .bind(snippet)
     .bind(document_id)
@@ -254,10 +263,37 @@ pub async fn add_document(
     snippet: &str,
     tfidf_terms: Vec<String>,
     rake_phrases: Vec<String>,
-) -> Result<()> {
-    add_snippet(db, snippet, document_name).await?;
+) -> Result<bool> {
+    let document_exists = !sqlx::query_as::<_, DocumentRow>(
+        "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
+    )
+    .bind(document_name)
+    .fetch_all(db)
+    .await?
+    .is_empty();
+
+    if document_exists {
+        println!("Document with the corresponding title already exists");
+        return Ok(false);
+    }
+
+    sqlx::query("INSERT INTO Document (document_name) VALUES ($1) ON CONFLICT(document_name) DO NOTHING;")
+    .bind(document_name)
+    .execute(db)
+    .await?;
+
+    let document_row = sqlx::query_as::<_, DocumentRow>(
+        "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
+    )
+    .bind(document_name)
+    .fetch_one(db)
+    .await?;
+
+    let document_id = document_row.document_id;
+
+    add_snippet_with_id(db, snippet, document_id).await?;
     update_tfidf_data(db, tfidf_terms, document_name).await?;
     update_rake_data(db, rake_phrases, document_name).await?;
 
-    Ok(())
+    Ok(true)
 }

@@ -19,15 +19,15 @@ tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sqlx = { version = "0.8.6", features = [ "sqlite" ] }
+sqlx = { version = "0.8.6", features = [ "sqlite", "runtime-tokio" ] }
 rust-stemmers = "1.2.0"
 dirs = "6.0.0"
-async-std = { version = "1.13.1", features = [ "attributes" ] }
 anyhow = "1.0.98"
 stop-words = "0.8.1"
 whatlang = "0.16.4"
 human_regex = "0.3.0"
 thiserror = "2.0.12"
+rand = "0.9.1"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
