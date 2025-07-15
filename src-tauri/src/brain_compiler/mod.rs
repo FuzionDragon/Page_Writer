@@ -12,8 +12,8 @@ pub mod tf_idf;
 pub type CorpusSnippets = HashMap<String, Vec<String>>;
 pub type Corpus = HashMap<String, String>;
 
-const COSINE_WEIGHT: f32 = 0.4;
-const THESHOLD: f32 = 0.6;
+const COSINE_WEIGHT: f32 = 0.6;
+const THESHOLD: f32 = 0.4;
 
 pub async fn submit_snippet(snippet: &str, db: &SqlitePool) -> Result<(), anyhow::Error> {
     let first_entry =
@@ -52,9 +52,21 @@ pub async fn submit_snippet(snippet: &str, db: &SqlitePool) -> Result<(), anyhow
         let corpus_rake_data = sqlite_interface::load_rake_data(db).await?;
 
         if let Some(title) = title {
-            sqlite_interface::add_document(db, title, snippet, input_tfidf_data, input_rake_data)
-                .await?;
-            println!("Titled snippet added");
+            let document_exists = !sqlite_interface::add_document(db, title, snippet, input_tfidf_data.clone(), input_rake_data.clone()).await?;
+            if document_exists {
+                let mut snippet_vec = snippet.split("\n").collect::<Vec<&str>>();
+                snippet_vec.remove(0);
+                if snippet_vec.is_empty() {
+                  println!("Snippet is empty");
+                  return Ok(())
+                };
+                let new_snippet = snippet_vec.join("\n");
+
+                sqlite_interface::add_document(db, title, &new_snippet, input_tfidf_data, input_rake_data).await?;
+                println!("Document title found, pushed snippet to existing doc");
+            } else {
+                println!("Document title not found, creating new doc");
+            }
         } else {
             let scores = combined_similarity_scores(
                 input_tfidf_data.clone(),
