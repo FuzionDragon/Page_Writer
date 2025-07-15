@@ -45,6 +45,7 @@ html {
 }
 
 body {
+  @include section;
   text-align: center;
   margin: auto;
   min-width: 320px;

@@ -10,7 +10,7 @@ type Document = HashMap<String, String>;
 #[derive(Debug, FromRow, Clone)]
 pub struct Snippet {
     snippet: String,
-    document: String,
+    document_name: String,
 }
 
 #[derive(Debug, FromRow, Clone)]
@@ -41,10 +41,10 @@ struct DocumentRow {
 pub async fn init(db: &SqlitePool) -> Result<()> {
     sqlx::query(
         r#"
-    CREATE TABLE IF NOT EXISTS Document (
-      document_id INTEGER PRIMARY KEY AUTOINCREMENT,
-      document_name TEXT UNIQUE
-    );
+  CREATE TABLE IF NOT EXISTS Document (
+    document_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    document_name TEXT UNIQUE
+  );
   "#,
     )
     .execute(db)
@@ -52,28 +52,14 @@ pub async fn init(db: &SqlitePool) -> Result<()> {
 
     sqlx::query(
         r#"
-    CREATE TABLE IF NOT EXISTS Snippet (
-      snippet_id INTEGER PRIMARY KEY AUTOINCREMENT,
-      snippet TEXT NOT NULL UNIQUE,
-      document_id INTEGER NOT NULL,
-      UNIQUE (snippet, document_id),
-      FOREIGN KEY (document_id)
-        REFERENCES Document (document_id)
-    );
- "#,
-    )
-    .execute(db)
-    .await?;
-
-    sqlx::query(
-        r#"
-    CREATE TABLE IF NOT EXISTS TFIDF_Term (
-      term TEXT NOT NULL,
-      snippet_id INTEGER NOT NULL,
-      PRIMARY KEY (term, snippet_id),
-      FOREIGN KEY (snippet_id)
-        REFERENCES Snippet (snippet_id)
-    );
+  CREATE TABLE IF NOT EXISTS Snippet (
+    snippet_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    snippet TEXT NOT NULL UNIQUE,
+    document_id INTEGER NOT NULL,
+    UNIQUE (snippet, document_id),
+    FOREIGN KEY (document_id)
+      REFERENCES Document (document_id)
+  );
   "#,
     )
     .execute(db)
@@ -81,14 +67,28 @@ pub async fn init(db: &SqlitePool) -> Result<()> {
 
     sqlx::query(
         r#"
-    CREATE TABLE IF NOT EXISTS RAKE_Phrase (
-      phrase TEXT NOT NULL,
-      snippet_id INTEGER NOT NULL,
-      PRIMARY KEY (phrase, snippet_id),
-      FOREIGN KEY (snippet_id)
-        REFERENCES Snippet (snippet_id)
-    );
-  "#,
+   CREATE TABLE IF NOT EXISTS TFIDF_Term (
+     term TEXT NOT NULL,
+     snippet_id INTEGER NOT NULL,
+     PRIMARY KEY (term, snippet_id),
+     FOREIGN KEY (snippet_id)
+       REFERENCES Snippet (snippet_id)
+   );
+   "#,
+    )
+    .execute(db)
+    .await?;
+
+    sqlx::query(
+        r#"
+     CREATE TABLE IF NOT EXISTS RAKE_Phrase (
+       phrase TEXT NOT NULL,
+       snippet_id INTEGER NOT NULL,
+       PRIMARY KEY (phrase, snippet_id),
+       FOREIGN KEY (snippet_id)
+         REFERENCES Snippet (snippet_id)
+     );
+   "#,
     )
     .execute(db)
     .await?;
@@ -109,7 +109,7 @@ pub async fn load_corpus_snippets(db: &SqlitePool) -> Result<CorpusSnippets> {
     let mut corpus_snippets: CorpusSnippets = HashMap::new();
     for snippet in snippets {
         corpus_snippets
-            .entry(snippet.document)
+            .entry(snippet.document_name)
             .or_default()
             .push(snippet.snippet);
     }
@@ -236,9 +236,9 @@ pub async fn add_snippet_with_id(db: &SqlitePool, snippet: &str, document_id: i3
 
 pub async fn add_snippet(db: &SqlitePool, snippet: &str, document_name: &str) -> Result<()> {
     sqlx::query("INSERT INTO Document (document_name) VALUES ($1);")
-    .bind(document_name)
-    .execute(db)
-    .await?;
+        .bind(document_name)
+        .execute(db)
+        .await?;
 
     let document_row = sqlx::query_as::<_, DocumentRow>(
         "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
@@ -277,7 +277,9 @@ pub async fn add_document(
         return Ok(false);
     }
 
-    sqlx::query("INSERT INTO Document (document_name) VALUES ($1) ON CONFLICT(document_name) DO NOTHING;")
+    sqlx::query(
+        "INSERT INTO Document (document_name) VALUES ($1) ON CONFLICT(document_name) DO NOTHING;",
+    )
     .bind(document_name)
     .execute(db)
     .await?;

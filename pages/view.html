@@ -2,10 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="stylesheet" href="./src/style.scss" />
+    <link rel="stylesheet" href="../src/style.scss" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Page Compiler</title>
-    <script type="module" src="./src/main.js" defer></script>
+    <script type="module" src="../src/view.js" defer></script>
     <style>
       .logo.vanilla:hover {
         filter: drop-shadow(0 0 2em #ffe21c);
@@ -15,12 +15,14 @@
 
   <body>
     <div id="leftnav">
-      <a href="">Home</a>
-      <a href="./pages/view.html">View</a>
+      <a href="../index.html">Home</a>
+      <a href="">View</a>
     </div>
     <div>
-      <h1>Page Compiler</h1>
-      <textarea id="snippet_input" row=50 cols=80></textarea>
+      <h1>Page View</h1>
+      <div id="snippet">
+        <h3>Snippets</h3>
+      </div>
     </div>
   </body>
 </html>
