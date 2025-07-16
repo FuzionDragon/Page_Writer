@@ -8,15 +8,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     .catch((error) => console.log("error caught:" + error));
 
   console.log("From app: " + corpus);
-  for (const [key, value] of Object.entries(corpus)) {
+  const documents = Object.entries(corpus).map(([document_name, snippets]) => {
+    const new_snippets = [];
+    snippets.forEach(snippet => {
+      new_snippets.push({
+        raw: snippet,
+        markdown: marked.parse(snippet)
+      })
+    })
+    return {
+      document_name,
+      new_snippets
+    }
+  });
+
+  documents.forEach(document_obj => {
     const card = document.createElement('div');
     card.className = "card";
-    const title = document.createElement('h2');
-    title.textContent = key;
-    const content = document.createElement('p')
-    content.textContent = value;
+    let title = document.createElement('h3');
+    title.innerText = document_obj.document_name;
     card.appendChild(title);
-    card.appendChild(content);
+    document_obj.new_snippets.forEach(snippet => {
+      const snippet_item = document.createElement('div');
+      snippet_item.innerHTML = snippet.markdown;
+      card.appendChild(snippet_item);
+    })
     snippet_container.appendChild(card);
-  }
+  })
 });
