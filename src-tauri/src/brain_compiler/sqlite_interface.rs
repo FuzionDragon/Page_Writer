@@ -5,8 +5,6 @@ use sqlx::{FromRow, SqlitePool};
 
 use super::{Corpus, CorpusSnippets};
 
-type Document = HashMap<String, String>;
-
 #[derive(Debug, FromRow, Clone)]
 pub struct Snippet {
     snippet: String,
@@ -179,11 +177,12 @@ pub async fn load_rake_data(db: &SqlitePool) -> Result<CorpusSnippets> {
 }
 
 pub async fn update_tfidf_data(db: &SqlitePool, terms: Vec<String>, document: &str) -> Result<()> {
-    let document_row =
-        sqlx::query_as::<_, DocumentRow>("SELECT * FROM Document WHERE document_name = $1;")
-            .bind(document)
-            .fetch_one(db)
-            .await?;
+    let document_row = sqlx::query_as::<_, DocumentRow>(
+        "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
+    )
+    .bind(document)
+    .fetch_one(db)
+    .await?;
 
     let snippet_row =
         sqlx::query_as::<_, SnippetRow>("SELECT * FROM Snippet WHERE document_id = $1;")
@@ -203,11 +202,12 @@ pub async fn update_tfidf_data(db: &SqlitePool, terms: Vec<String>, document: &s
 }
 
 pub async fn update_rake_data(db: &SqlitePool, phrases: Vec<String>, document: &str) -> Result<()> {
-    let document_row =
-        sqlx::query_as::<_, DocumentRow>("SELECT * FROM Document WHERE document_name = $1;")
-            .bind(document)
-            .fetch_one(db)
-            .await?;
+    let document_row = sqlx::query_as::<_, DocumentRow>(
+        "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
+    )
+    .bind(document)
+    .fetch_one(db)
+    .await?;
 
     let snippet_row =
         sqlx::query_as::<_, SnippetRow>("SELECT * FROM Snippet WHERE document_id = $1;")
@@ -227,11 +227,43 @@ pub async fn update_rake_data(db: &SqlitePool, phrases: Vec<String>, document: &
 }
 
 pub async fn set_marked_document(db: &SqlitePool, document: &str) -> Result<()> {
-    //    sqlx::query("UPDATE ")
+    sqlx::query("UPDATE Document SET is_marked = NULL WHERE is_marked = 1;")
+        .execute(db)
+        .await?;
+
+    sqlx::query("UPDATE Document SET is_marked = 1 WHERE document_name = $1;")
+        .bind(document)
+        .execute(db)
+        .await?;
+
     Ok(())
 }
 
+pub async fn fetch_marked_document(db: &SqlitePool) -> Result<String> {
+    // could have been a fetch_optional
+    let documents = sqlx::query_as::<_, DocumentRow>(
+        "SELECT document_id, document_name FROM Document WHERE is_marked = 1;",
+    )
+    .fetch_all(db)
+    .await?;
+
+    if documents.is_empty() {
+        Ok("NONE".to_string())
+    } else {
+        Ok(documents[0].document_name.clone())
+    }
+}
+
 pub async fn set_latest_document(db: &SqlitePool, document: &str) -> Result<()> {
+    sqlx::query("UPDATE Document SET is_last = NULL WHERE is_last = 1;")
+        .execute(db)
+        .await?;
+
+    sqlx::query("UPDATE Document SET is_last = 1 WHERE document_name = $1;")
+        .bind(document)
+        .execute(db)
+        .await?;
+
     Ok(())
 }
 

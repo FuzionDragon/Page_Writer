@@ -31,8 +31,6 @@ pub async fn submit_snippet(snippet: &str, db: &SqlitePool) -> Result<(), anyhow
 
     let corpus_tfidf_data = sqlite_interface::load_tfidf_data(db).await?;
     let corpus_rake_data = sqlite_interface::load_rake_data(db).await?;
-    println!("TFIDF Fetched: {:?}", corpus_tfidf_data.clone());
-    println!("Rake Fetched: {:?}", corpus_rake_data.clone());
 
     if let Some(title) = title {
         sqlite_interface::add_document(
@@ -43,6 +41,7 @@ pub async fn submit_snippet(snippet: &str, db: &SqlitePool) -> Result<(), anyhow
             input_rake_data.clone(),
         )
         .await?;
+        sqlite_interface::set_latest_document(db, title.trim()).await?;
     } else {
         let scores = combined_similarity_scores(
             input_tfidf_data.clone(),
@@ -63,7 +62,8 @@ pub async fn submit_snippet(snippet: &str, db: &SqlitePool) -> Result<(), anyhow
             )
             .await?;
             sqlite_interface::update_tfidf_data(db, input_tfidf_data, first_title).await?;
-            sqlite_interface::update_tfidf_data(db, input_rake_data, first_title).await?;
+            sqlite_interface::update_rake_data(db, input_rake_data, first_title).await?;
+            sqlite_interface::set_latest_document(db, first_line).await?;
             return Ok(());
         }
 
@@ -76,6 +76,7 @@ pub async fn submit_snippet(snippet: &str, db: &SqlitePool) -> Result<(), anyhow
             sqlite_interface::add_snippet(db, snippet, &scores[0].0).await?;
             sqlite_interface::update_tfidf_data(db, input_tfidf_data, &scores[0].0).await?;
             sqlite_interface::update_rake_data(db, input_rake_data, &scores[0].0).await?;
+            sqlite_interface::set_latest_document(db, &scores[0].0).await?;
         } else {
             println!(
                 "{} doesn't meet the threshold with a score of {}",
@@ -90,6 +91,7 @@ pub async fn submit_snippet(snippet: &str, db: &SqlitePool) -> Result<(), anyhow
                 input_rake_data,
             )
             .await?;
+            sqlite_interface::set_latest_document(db, first_line.trim()).await?;
         }
     }
 

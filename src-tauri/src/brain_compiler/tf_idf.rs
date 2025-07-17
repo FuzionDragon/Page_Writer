@@ -45,12 +45,11 @@ pub fn tf_idf_hash(document: Vec<String>, corpus: CorpusSnippets) -> HashMap<Str
         .values()
         .map(|v| v.iter().map(|v| v.as_str()).collect())
         .collect();
+
     for document in corpus_documents {
         all_terms.extend(document);
     }
-    println!("All terms: {:?}", all_terms.clone());
 
-    println!("str_document: {:?}", str_document.clone());
     for term in all_terms {
         println!("Term: {}", term);
         if str_document.is_empty() {

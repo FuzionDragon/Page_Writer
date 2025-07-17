@@ -1,15 +1,10 @@
-use std::collections::HashMap;
-
 use dirs::home_dir;
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 
 mod brain_compiler;
 use brain_compiler::submit_snippet;
 
-use crate::brain_compiler::{
-    sqlite_interface::{self, Snippet},
-    CorpusSnippets,
-};
+use crate::brain_compiler::{sqlite_interface, CorpusSnippets};
 
 const PATH: &str = "dev/rust/page-compiler-tauri/src-tauri/src/data.db";
 
@@ -71,18 +66,67 @@ async fn load_snippets() -> Result<CorpusSnippets, Error> {
     let db = SqlitePool::connect(&path).await?;
     sqlite_interface::init(&db).await?;
 
-    println!("Testing");
     let result = sqlite_interface::load_corpus_snippets(&db).await?;
-    println!("{:?}", result.clone());
 
     Ok(result)
+}
+
+#[tauri::command]
+async fn fetch_marked_document() -> Result<String, Error> {
+    let path = home_dir()
+        .expect("Unable to find home directory")
+        .join(PATH)
+        .into_os_string()
+        .into_string()
+        .unwrap();
+
+    if !Sqlite::database_exists(&path).await.unwrap_or(false) {
+        println!("Creating database: {}", &path);
+        Sqlite::create_database(&path).await?;
+    }
+
+    let db = SqlitePool::connect(&path).await?;
+
+    sqlite_interface::init(&db).await?;
+
+    let marked_document = sqlite_interface::fetch_marked_document(&db).await?;
+
+    Ok(marked_document)
+}
+
+#[tauri::command]
+async fn mark_document(document_name: String) -> Result<(), Error> {
+    let path = home_dir()
+        .expect("Unable to find home directory")
+        .join(PATH)
+        .into_os_string()
+        .into_string()
+        .unwrap();
+
+    if !Sqlite::database_exists(&path).await.unwrap_or(false) {
+        println!("Creating database: {}", &path);
+        Sqlite::create_database(&path).await?;
+    }
+
+    let db = SqlitePool::connect(&path).await?;
+
+    sqlite_interface::init(&db).await?;
+
+    sqlite_interface::set_marked_document(&db, &document_name).await?;
+
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![submit, load_snippets])
+        .invoke_handler(tauri::generate_handler![
+            submit,
+            load_snippets,
+            mark_document,
+            fetch_marked_document,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

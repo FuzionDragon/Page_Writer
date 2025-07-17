@@ -22,6 +22,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  let marked_document_label = document.getElementById('marked_document');
+  const marked_document = await invoke('fetch_marked_document')
+    .catch((error) => console.log("Error caught:" + error));
+  marked_document_label.innerText = marked_document;
+
   documents.forEach(document_obj => {
     const card = document.createElement('div');
     card.className = "card";
