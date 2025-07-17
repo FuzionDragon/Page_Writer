@@ -50,6 +50,10 @@ pub fn weighted_jaccard_similarity(
     let mut all_words: HashSet<&str> = document_1.iter().map(|v| v.as_str()).collect();
     all_words.extend::<HashSet<&str>>(document_2.iter().map(|v| v.as_str()).collect());
 
+    if all_words.is_empty() {
+        return 0.;
+    }
+
     let minimum = all_words
         .clone()
         .into_iter()

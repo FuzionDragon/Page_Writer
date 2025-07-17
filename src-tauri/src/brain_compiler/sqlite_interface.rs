@@ -41,11 +41,13 @@ struct DocumentRow {
 pub async fn init(db: &SqlitePool) -> Result<()> {
     sqlx::query(
         r#"
-  CREATE TABLE IF NOT EXISTS Document (
-    document_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    document_name TEXT UNIQUE
-  );
-  "#,
+    CREATE TABLE IF NOT EXISTS Document (
+      document_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      document_name TEXT UNIQUE,
+      is_last INTEGER,
+      is_marked INTEGER
+    );
+    "#,
     )
     .execute(db)
     .await?;
@@ -67,28 +69,28 @@ pub async fn init(db: &SqlitePool) -> Result<()> {
 
     sqlx::query(
         r#"
-   CREATE TABLE IF NOT EXISTS TFIDF_Term (
-     term TEXT NOT NULL,
-     snippet_id INTEGER NOT NULL,
-     PRIMARY KEY (term, snippet_id),
-     FOREIGN KEY (snippet_id)
-       REFERENCES Snippet (snippet_id)
-   );
-   "#,
+    CREATE TABLE IF NOT EXISTS TFIDF_Term (
+      term TEXT NOT NULL,
+      snippet_id INTEGER NOT NULL,
+      PRIMARY KEY (term, snippet_id),
+      FOREIGN KEY (snippet_id)
+        REFERENCES Snippet (snippet_id)
+    );
+    "#,
     )
     .execute(db)
     .await?;
 
     sqlx::query(
         r#"
-     CREATE TABLE IF NOT EXISTS RAKE_Phrase (
-       phrase TEXT NOT NULL,
-       snippet_id INTEGER NOT NULL,
-       PRIMARY KEY (phrase, snippet_id),
-       FOREIGN KEY (snippet_id)
-         REFERENCES Snippet (snippet_id)
-     );
-   "#,
+      CREATE TABLE IF NOT EXISTS RAKE_Phrase (
+        phrase TEXT NOT NULL,
+        snippet_id INTEGER NOT NULL,
+        PRIMARY KEY (phrase, snippet_id),
+        FOREIGN KEY (snippet_id)
+          REFERENCES Snippet (snippet_id)
+      );
+    "#,
     )
     .execute(db)
     .await?;
@@ -224,6 +226,15 @@ pub async fn update_rake_data(db: &SqlitePool, phrases: Vec<String>, document: &
     Ok(())
 }
 
+pub async fn set_marked_document(db: &SqlitePool, document: &str) -> Result<()> {
+    //    sqlx::query("UPDATE ")
+    Ok(())
+}
+
+pub async fn set_latest_document(db: &SqlitePool, document: &str) -> Result<()> {
+    Ok(())
+}
+
 pub async fn add_snippet_with_id(db: &SqlitePool, snippet: &str, document_id: i32) -> Result<()> {
     sqlx::query("INSERT OR IGNORE INTO Snippet (snippet, document_id) VALUES ($1, $2) ON CONFLICT(snippet, document_id) DO NOTHING;")
     .bind(snippet)
@@ -274,6 +285,32 @@ pub async fn add_document(
 
     if document_exists {
         println!("Document with the corresponding title already exists");
+
+        let mut snippet_vec = snippet.split("\n").collect::<Vec<&str>>();
+        snippet_vec.remove(0);
+        if snippet_vec.is_empty() {
+            println!("Snippet is empty");
+            return Ok(false);
+        };
+        let new_snippet = snippet_vec.join("\n");
+
+        println!("New snippet: {:?}", new_snippet.clone());
+
+        let document_row = sqlx::query_as::<_, DocumentRow>(
+            "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
+        )
+        .bind(document_name)
+        .fetch_one(db)
+        .await?;
+
+        let document_id = document_row.document_id;
+
+        add_snippet_with_id(db, &new_snippet, document_id).await?;
+        update_tfidf_data(db, tfidf_terms, document_name).await?;
+        update_rake_data(db, rake_phrases, document_name).await?;
+
+        println!("Appended snippet to existing doc");
+
         return Ok(false);
     }
 

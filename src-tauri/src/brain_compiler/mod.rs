@@ -16,15 +16,9 @@ const COSINE_WEIGHT: f32 = 0.6;
 const THESHOLD: f32 = 0.4;
 
 pub async fn submit_snippet(snippet: &str, db: &SqlitePool) -> Result<(), anyhow::Error> {
-    let first_entry =
-        sqlx::query("SELECT name FROM sqlite_master WHERE type='table' AND name='Document'")
-            .fetch_all(db)
-            .await?
-            .is_empty();
-
     if snippet.is_empty() {
-      println!("Snippet is empty");
-      return Ok(())
+        println!("Snippet is empty");
+        return Ok(());
     };
 
     let first_line = snippet.lines().collect::<Vec<&str>>()[0];
@@ -35,64 +29,67 @@ pub async fn submit_snippet(snippet: &str, db: &SqlitePool) -> Result<(), anyhow
     let input_tfidf_data = preprocess::tfidf_preprocess(snippet, stop_words.clone());
     let input_rake_data = preprocess::rake_preprocess(snippet, stop_words.clone());
 
-    if first_entry {
-        sqlite_interface::init(db).await?;
+    let corpus_tfidf_data = sqlite_interface::load_tfidf_data(db).await?;
+    let corpus_rake_data = sqlite_interface::load_rake_data(db).await?;
+    println!("TFIDF Fetched: {:?}", corpus_tfidf_data.clone());
+    println!("Rake Fetched: {:?}", corpus_rake_data.clone());
 
-        if let Some(title) = title {
-            let document_exists = !sqlite_interface::add_document(db, title.trim(), snippet, input_tfidf_data, input_rake_data).await?;
-            if document_exists {
-                println!("Document with that title already exists");
-            }
-        } else {
-            let first_document = "first document";
-            sqlite_interface::add_document(db, first_document, snippet, input_tfidf_data, input_rake_data).await?;
-        }
+    if let Some(title) = title {
+        sqlite_interface::add_document(
+            db,
+            title.trim(),
+            snippet,
+            input_tfidf_data.clone(),
+            input_rake_data.clone(),
+        )
+        .await?;
     } else {
-        let corpus_tfidf_data = sqlite_interface::load_tfidf_data(db).await?;
-        let corpus_rake_data = sqlite_interface::load_rake_data(db).await?;
+        let scores = combined_similarity_scores(
+            input_tfidf_data.clone(),
+            input_rake_data.clone(),
+            corpus_tfidf_data,
+            corpus_rake_data,
+            COSINE_WEIGHT,
+        );
 
-        if let Some(title) = title {
-            let document_exists = !sqlite_interface::add_document(db, title, snippet, input_tfidf_data.clone(), input_rake_data.clone()).await?;
-            if document_exists {
-                let mut snippet_vec = snippet.split("\n").collect::<Vec<&str>>();
-                snippet_vec.remove(0);
-                if snippet_vec.is_empty() {
-                  println!("Snippet is empty");
-                  return Ok(())
-                };
-                let new_snippet = snippet_vec.join("\n");
-
-                sqlite_interface::add_document(db, title, &new_snippet, input_tfidf_data, input_rake_data).await?;
-                println!("Document title found, pushed snippet to existing doc");
-            } else {
-                println!("Document title not found, creating new doc");
-            }
-        } else {
-            let scores = combined_similarity_scores(
+        if scores.is_empty() {
+            let first_title = "First Document";
+            sqlite_interface::add_document(
+                db,
+                first_line,
+                snippet,
                 input_tfidf_data.clone(),
                 input_rake_data.clone(),
-                corpus_tfidf_data,
-                corpus_rake_data,
-                COSINE_WEIGHT,
+            )
+            .await?;
+            sqlite_interface::update_tfidf_data(db, input_tfidf_data, first_title).await?;
+            sqlite_interface::update_tfidf_data(db, input_rake_data, first_title).await?;
+            return Ok(());
+        }
+
+        if scores[0].1 >= THESHOLD {
+            println!(
+                "{} is the chosen document with a score of {}",
+                scores[0].0, scores[0].1
             );
 
-            if scores[0].1 >= THESHOLD {
-                println!(
-                    "{} is the chosen document with a score of {}",
-                    scores[0].0, scores[0].1
-                );
-
-                sqlite_interface::add_snippet(db, snippet, &scores[0].0).await?;
-                sqlite_interface::update_tfidf_data(db, input_tfidf_data, &scores[0].0).await?;
-                sqlite_interface::update_rake_data(db, input_rake_data, &scores[0].0).await?;
-            } else {
-                println!(
-                    "{} doesn't meet the threshold with a score of {}",
-                    scores[0].0, scores[0].1
-                );
-                println!("Creating new document");
-                sqlite_interface::add_document(db, first_line.trim(), snippet, input_tfidf_data, input_rake_data).await?;
-            }
+            sqlite_interface::add_snippet(db, snippet, &scores[0].0).await?;
+            sqlite_interface::update_tfidf_data(db, input_tfidf_data, &scores[0].0).await?;
+            sqlite_interface::update_rake_data(db, input_rake_data, &scores[0].0).await?;
+        } else {
+            println!(
+                "{} doesn't meet the threshold with a score of {}",
+                scores[0].0, scores[0].1
+            );
+            println!("Creating new document");
+            sqlite_interface::add_document(
+                db,
+                first_line.trim(),
+                snippet,
+                input_tfidf_data,
+                input_rake_data,
+            )
+            .await?;
         }
     }
 
@@ -122,16 +119,23 @@ fn combined_similarity_scores(
     let mut combined_scores: HashMap<String, f32> = HashMap::new();
 
     for document in all_documents {
-        let cosine_similarity_score = similarity::cosine_similarity_tuple(
-            tf_idf_input_score.clone(),
-            corpus_tfidf_scores[document].clone(),
-        ) * cosine_weight;
+        let mut empty: HashMap<String, f32> = HashMap::new();
+        empty.insert(document.to_string(), 0.);
 
+        let corpus_tfidf_score = corpus_tfidf_scores.get(document).unwrap_or(&empty).clone();
+        let cosine_similarity_score =
+            similarity::cosine_similarity_tuple(tf_idf_input_score.clone(), corpus_tfidf_score)
+                * cosine_weight;
+
+        let corpus_rake_score = corpus_rake_scores.get(document).unwrap_or(&empty).clone();
         let weighted_jaccard_similarity_score = similarity::weighted_jaccard_similarity(
             input_rake_data.clone(),
-            corpus_rake_data[document].clone(),
+            corpus_rake_data
+                .get(document)
+                .unwrap_or(&Vec::new())
+                .clone(),
             rake_input_score.clone(),
-            corpus_rake_scores[document].clone(),
+            corpus_rake_score,
         ) * (1. - cosine_weight);
 
         combined_scores.insert(

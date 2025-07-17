@@ -47,6 +47,7 @@ async fn submit(snippet: String) -> Result<(), Error> {
     }
 
     let db = SqlitePool::connect(&path).await?;
+    sqlite_interface::init(&db).await?;
 
     submit_snippet(&snippet, &db).await?;
 
@@ -68,6 +69,7 @@ async fn load_snippets() -> Result<CorpusSnippets, Error> {
     }
 
     let db = SqlitePool::connect(&path).await?;
+    sqlite_interface::init(&db).await?;
 
     println!("Testing");
     let result = sqlite_interface::load_corpus_snippets(&db).await?;

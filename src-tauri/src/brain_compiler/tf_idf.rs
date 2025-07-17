@@ -48,12 +48,19 @@ pub fn tf_idf_hash(document: Vec<String>, corpus: CorpusSnippets) -> HashMap<Str
     for document in corpus_documents {
         all_terms.extend(document);
     }
+    println!("All terms: {:?}", all_terms.clone());
 
+    println!("str_document: {:?}", str_document.clone());
     for term in all_terms {
-        scores.insert(
-            term.to_string(),
-            tf_idf(term, str_document.clone(), corpus.clone()),
-        );
+        println!("Term: {}", term);
+        if str_document.is_empty() {
+            scores.insert(term.to_string(), 0.);
+        } else {
+            scores.insert(
+                term.to_string(),
+                tf_idf(term, str_document.clone(), corpus.clone()),
+            );
+        }
     }
 
     scores

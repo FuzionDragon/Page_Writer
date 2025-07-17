@@ -15,12 +15,18 @@ $mediaMaxWidth: 520px;
   border-radius: 8px;
 }
 
+@mixin overlay {
+  position: fixed;
+  z-index: 3;
+  overflow-x: hidden;
+}
+
 @mixin nav {
   @include border;
   margin: 1em;
   padding: 0.5em;
   text-align: left;
-  z-index: 9999;
+  z-index: 1;
   flex-grow: 2;
   position: fixed;
 }
@@ -102,6 +108,10 @@ textarea {
   right: 0;
 }
 
+#document-picker {
+  display: none;
+}
+
 @media (max-width: $mediaMaxWidth) {
   #rightnav {
     right: auto;
@@ -124,4 +134,8 @@ textarea {
   flex-wrap: wrap;
   justify-content: space-between;
   align-content: space-between;
+}
+
+.overlay-document-picker {
+  @include overlay;
 }
