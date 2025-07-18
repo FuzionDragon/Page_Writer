@@ -1,9 +1,13 @@
-# Tauri + Vanilla
+# Page Writer
 
-This template should help get you started developing with Tauri in vanilla HTML, CSS and Javascript.
+A powerful note taking application for spontanious note takers and power users.
 
-## Recommended IDE Setup
+Notes are treated as snippets of text that belongs to a collection of other related snippets, making up a document.
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
-tauri init android
-remember that 'NO_STRIP=true cargo tauri build --verbose' should be used before deployment
+They are currently pieces of markdown which is stored in a Sqlite database, **however there are plans for exporting and importing actual markdown files**.
+
+### Core Features
+
+- The user has the ability to quickly and easily merge notes with a specific document by simply giving a name of an existing document, if it doesn't exist then a document with the corresponding name will be created.
+
+- Notes without an entered name will merge or create a new document automatically by Page-Writer by using numerous algorithms against the existing documents and notes to make a decision. **(this feature will have varying results if the database is too small, so for the best results only use this feature when there is a reasonable population of documents and notes)**
