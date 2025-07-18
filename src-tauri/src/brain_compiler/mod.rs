@@ -15,14 +15,15 @@ pub type Corpus = HashMap<String, String>;
 const COSINE_WEIGHT: f32 = 0.6;
 const THESHOLD: f32 = 0.4;
 
-pub async fn submit_snippet(snippet: &str, db: &SqlitePool) -> Result<(), anyhow::Error> {
+pub async fn submit_snippet(
+    snippet: &str,
+    title: Option<&str>,
+    db: &SqlitePool,
+) -> Result<(), anyhow::Error> {
     if snippet.is_empty() {
         println!("Snippet is empty");
         return Ok(());
     };
-
-    let first_line = snippet.lines().collect::<Vec<&str>>()[0];
-    let title: Option<&str> = first_line.strip_prefix('#');
 
     let stop_words = get(LANGUAGE::English);
 
@@ -43,6 +44,7 @@ pub async fn submit_snippet(snippet: &str, db: &SqlitePool) -> Result<(), anyhow
         .await?;
         sqlite_interface::set_latest_document(db, title.trim()).await?;
     } else {
+        let first_line = snippet.lines().collect::<Vec<&str>>()[0];
         let scores = combined_similarity_scores(
             input_tfidf_data.clone(),
             input_rake_data.clone(),
@@ -52,7 +54,6 @@ pub async fn submit_snippet(snippet: &str, db: &SqlitePool) -> Result<(), anyhow
         );
 
         if scores.is_empty() {
-            let first_title = "First Document";
             sqlite_interface::add_document(
                 db,
                 first_line,
@@ -61,8 +62,8 @@ pub async fn submit_snippet(snippet: &str, db: &SqlitePool) -> Result<(), anyhow
                 input_rake_data.clone(),
             )
             .await?;
-            sqlite_interface::update_tfidf_data(db, input_tfidf_data, first_title).await?;
-            sqlite_interface::update_rake_data(db, input_rake_data, first_title).await?;
+            sqlite_interface::update_tfidf_data(db, input_tfidf_data, first_line.trim()).await?;
+            sqlite_interface::update_rake_data(db, input_rake_data, first_line.trim()).await?;
             sqlite_interface::set_latest_document(db, first_line).await?;
             return Ok(());
         }

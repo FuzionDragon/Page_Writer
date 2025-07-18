@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   })
 });
 
-window.onkeyup = function(e) {
+window.onkeydown = function(e) {
   if (e.ctrlKey && e.key === "t") {
     window.location.href = "../index.html";
   }

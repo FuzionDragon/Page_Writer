@@ -16,5 +16,8 @@
     "sass": "^1.89.2",
     "sass-embedded": "^1.89.2",
     "vite": "^7.0.4"
+  },
+  "dependencies": {
+    "fuse.js": "^7.1.0"
   }
 }

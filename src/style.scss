@@ -85,13 +85,11 @@ a {
 }
 
 textarea {
-  @include border;
+//  @include border;
   color: light-dark($background-color, $foreground-color);
   background-color: light-dark($foreground-color, $background-color);
-  width: 60%;
-  height: 20em;
   font-size: 1.2em;
-  padding: 1.2em;
+  width: 60%;
   resize: none;
   outline: none;
 }
@@ -106,6 +104,14 @@ textarea {
   @include nav;
   top: 0;
   right: 0;
+}
+
+#title-input {
+  font-size: 1.6em;
+}
+
+#snippet-input {
+  height: 25em;
 }
 
 #document-picker {

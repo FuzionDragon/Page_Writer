@@ -28,7 +28,7 @@ impl serde::Serialize for Error {
 }
 
 #[tauri::command]
-async fn submit(snippet: String) -> Result<(), Error> {
+async fn submit(snippet: String, title: String) -> Result<(), Error> {
     let path = home_dir()
         .expect("Unable to find home directory")
         .join(PATH)
@@ -44,7 +44,11 @@ async fn submit(snippet: String) -> Result<(), Error> {
     let db = SqlitePool::connect(&path).await?;
     sqlite_interface::init(&db).await?;
 
-    submit_snippet(&snippet, &db).await?;
+    if title.is_empty() {
+        submit_snippet(&snippet, None, &db).await?;
+    } else {
+        submit_snippet(&snippet, Some(&title), &db).await?;
+    }
 
     Ok(())
 }
