@@ -12,6 +12,20 @@ They are currently pieces of markdown which is stored in a Sqlite database, **ho
 
 - Notes without an entered name will merge or create a new document automatically by Page-Writer by using numerous algorithms against the existing documents and notes to make a decision. **(this feature will have varying results if the database is too small, so for the best results only use this feature when there is a reasonable population of documents and notes)**
 
+### Keybinds
+
+Keybinds are a central part of Page Writers usage and allows for better efficiency when navigating the application.
+
+**Currently keybinds are hardcoded and cannot be changed as of writing, this is planned in the future alongside a config file and a potential settings menu**
+
+Submitting a snippet on the input menu : Ctrl + Enter
+
+Toggle document fuzzy finder (behaviour changes depending on menu) : Ctrl + E
+
+Switch between input and view menus : Ctrl + T
+
+Settings? : Escape
+
 ### TODO
 
 - Fuzzy finder menu for use in setting a marked document or which document to view.
@@ -19,3 +33,5 @@ They are currently pieces of markdown which is stored in a Sqlite database, **ho
 - Markdown imported and exporter, both file and directory based.
 
 - Snippet moving, updating and deleting.
+
+- Config file for allowing the change of core keybinds and other potential settings, there may be a plan for an in-app settings menu to allow better accessibility.
