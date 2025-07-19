@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Page Compiler</title>
     <script type="module" src="../src/view.js" defer></script>
+    <script type="module" src="../src/search.js" defer></script>
     <style>
       .logo.vanilla:hover {
         filter: drop-shadow(0 0 2em #ffe21c);
@@ -13,15 +14,11 @@
     </style>
   </head>
 
-  <body>
-    <div id="document-picker" class="overlay-document-picker">
-      <div class="card">
-        <h1>This is a file picker</h1>
-      </div>
-    </div>
+  <body id="view">
     <div id="leftnav">
       <a href="../index.html">Home</a>
       <a href="">View</a>
+      <button id="toggle-picker" type="button">Mark</button>
     </div>
     <div id="rightnav">
       <a id="marked_document" href="">NONE</a>

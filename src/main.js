@@ -36,12 +36,4 @@ window.onkeydown = function(e) {
   if (e.ctrlKey && e.key === "t") {
     window.location.href = "./pages/view.html";
   }
-  if (e.ctrlKey && e.key === "e") {
-    const document_picker = document.getElementById("document-picker");
-    if (document_picker.style.display === "block") {
-      document_picker.style.display = "none";
-    } else {
-      document_picker.style.display = "block";
-    }
-  }
 }

@@ -12,12 +12,10 @@
   "devDependencies": {
     "@tauri-apps/api": "^2.6.0",
     "@tauri-apps/cli": "^2",
+    "fuse.js": "^7.1.0",
     "marked": "^16.0.0",
     "sass": "^1.89.2",
     "sass-embedded": "^1.89.2",
     "vite": "^7.0.4"
-  },
-  "dependencies": {
-    "fuse.js": "^7.1.0"
   }
 }
