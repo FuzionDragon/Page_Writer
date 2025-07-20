@@ -3,7 +3,10 @@ import Fuse from "fuse.js";
 
 const first_element = document.getElementById('leftnav');
 const picker_button = document.getElementById('toggle-picker');
+let document_list;
+let input;
 let picker;
+let fuse;
 
 const toggle_picker = async () => {
   const document_picker = document.getElementById("document-picker");
@@ -11,13 +14,6 @@ const toggle_picker = async () => {
     document_picker.style.display = "none";
   } else {
     document_picker.style.display = "block";
-    const corpus = await invoke('load_snippets')
-      .catch((error) => console.log("error caught:" + error));
-
-    const fuse = new Fuse(Object.keys(corpus), {
-      keys: ['title'],
-      threshold: 0.4
-    });
   }
 }
 
@@ -26,19 +22,41 @@ document.addEventListener('DOMContentLoaded', async () => {
   picker.id = "document-picker";
   picker.className = "overlay-document-picker";
 
-  const input = document.createElement('input');
+  input = document.createElement('input');
   input.type = "text";
   input.placeholder = "Searching documents... ";
   input.id = "document_input";
 
-  const document_list = document.createElement('ul');
+  document_list = document.createElement('ul');
   document_list.id = "document_list";
 
   picker.appendChild(input);
   picker.appendChild(document_list);
 
   document.body.insertBefore(picker, first_element);
+
+  const corpus = await invoke('load_snippets')
+    .catch((error) => console.log("error caught:" + error));
+
+  console.log("Object: " + corpus);
+  fuse = new Fuse(Object.keys(corpus), {
+    keys: ['title'],
+    threshold: 0.4
+  });
 })
+
+document.oninput = function(e) {
+  document_list.innerHTML = '';
+  const query = e.target.value;
+  const results = fuse.search(query);
+
+  results.forEach(result => {
+    console.log(result.item);
+    const doc = document.createElement('li');
+    doc.innerText = result.item;
+    document_list.appendChild(doc);
+  });
+};
 
 document.onkeydown = function(e) {
   if (e.ctrlKey && e.key === "e") {
