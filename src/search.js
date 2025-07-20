@@ -4,7 +4,6 @@ import Fuse from "fuse.js";
 const first_element = document.getElementById('leftnav');
 const picker_button = document.getElementById('toggle-picker');
 let picker;
-let search;
 
 const toggle_picker = async () => {
   const document_picker = document.getElementById("document-picker");
@@ -12,13 +11,13 @@ const toggle_picker = async () => {
     document_picker.style.display = "none";
   } else {
     document_picker.style.display = "block";
-    const options = {
-      keys: ["title"]
-    };
     const corpus = await invoke('load_snippets')
       .catch((error) => console.log("error caught:" + error));
 
-    const fuse = new Fuse(Object.keys(corpus), options);
+    const fuse = new Fuse(Object.keys(corpus), {
+      keys: ['title'],
+      threshold: 0.4
+    });
   }
 }
 
@@ -27,14 +26,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   picker.id = "document-picker";
   picker.className = "overlay-document-picker";
 
-  search = document.createElement('div');
-  search.className = "card";
+  const input = document.createElement('input');
+  input.type = "text";
+  input.placeholder = "Searching documents... ";
+  input.id = "document_input";
 
-  const title = document.createElement('h1');
-  title.innerText = "This is a file picker";
+  const document_list = document.createElement('ul');
+  document_list.id = "document_list";
 
-  search.appendChild(title);
-  picker.appendChild(search);
+  picker.appendChild(input);
+  picker.appendChild(document_list);
 
   document.body.insertBefore(picker, first_element);
 })

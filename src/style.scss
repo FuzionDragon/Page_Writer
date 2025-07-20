@@ -129,6 +129,11 @@ textarea {
 
 #index {
   overflow: hidden;
+  max-width: 70%;
+}
+
+#view {
+  max-width: 70%;
 }
 
 @media (max-width: $mediaMaxWidth) {
@@ -157,4 +162,8 @@ textarea {
 
 .overlay-document-picker {
   @include overlay;
+  @include border;
+  margin: 8em;
+  padding: 8em;
+  align-content: center;
 }

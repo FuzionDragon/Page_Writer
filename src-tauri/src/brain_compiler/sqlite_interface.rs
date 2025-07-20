@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::{Ok, Result};
 use sqlx::{FromRow, SqlitePool};
 
-use super::{Corpus, CorpusSnippets};
+use super::{Corpus, CorpusSnippets, PageDocument};
 
 #[derive(Debug, FromRow, Clone)]
 pub struct Snippet {
@@ -239,18 +239,28 @@ pub async fn set_marked_document(db: &SqlitePool, document: &str) -> Result<()> 
     Ok(())
 }
 
-pub async fn fetch_marked_document(db: &SqlitePool) -> Result<String> {
-    // could have been a fetch_optional
-    let documents = sqlx::query_as::<_, DocumentRow>(
-        "SELECT document_id, document_name FROM Document WHERE is_marked = 1;",
+pub async fn fetch_marked_document(db: &SqlitePool) -> Result<PageDocument> {
+    let snippets = sqlx::query_as::<_, Snippet>(
+        r#"
+        SELECT Document.document_name, snippet FROM Snippet
+        LEFT JOIN Document ON Snippet.document_id == Document.document_id;
+      "#,
     )
     .fetch_all(db)
     .await?;
 
-    if documents.is_empty() {
-        Ok("NONE".to_string())
+    if snippets.is_empty() {
+        let empty: Vec<String> = Vec::new();
+        Ok(PageDocument {
+            document_name: "NONE".to_string(),
+            snippets: empty,
+        })
     } else {
-        Ok(documents[0].document_name.clone())
+        let all_snippets: Vec<String> = snippets.iter().map(|v| v.snippet.clone()).collect();
+        Ok(PageDocument {
+            document_name: snippets[0].document_name.clone(),
+            snippets: all_snippets,
+        })
     }
 }
 

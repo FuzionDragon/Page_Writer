@@ -1,4 +1,5 @@
 use anyhow::Ok;
+use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use std::collections::{HashMap, HashSet};
 use stop_words::{get, LANGUAGE};
@@ -11,6 +12,12 @@ pub mod tf_idf;
 
 pub type CorpusSnippets = HashMap<String, Vec<String>>;
 pub type Corpus = HashMap<String, String>;
+
+#[derive(Deserialize, Serialize)]
+pub struct PageDocument {
+    document_name: String,
+    snippets: Vec<String>,
+}
 
 const COSINE_WEIGHT: f32 = 0.6;
 const THESHOLD: f32 = 0.4;

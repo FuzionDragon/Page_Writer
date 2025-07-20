@@ -30,8 +30,10 @@ Settings? : Escape
 
 - Fuzzy finder menu for use in setting a marked document or which document to view.
 
-- Markdown imported and exporter, both file and directory based.
-
 - Snippet moving, updating and deleting.
 
 - Config file for allowing the change of core keybinds and other potential settings, there may be a plan for an in-app settings menu to allow better accessibility.
+
+- Markdown imported and exporter, both file and directory based.
+
+- Potentially multiple databases.

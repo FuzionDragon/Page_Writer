@@ -4,7 +4,7 @@ use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 mod brain_compiler;
 use brain_compiler::submit_snippet;
 
-use crate::brain_compiler::{sqlite_interface, CorpusSnippets};
+use crate::brain_compiler::{sqlite_interface, CorpusSnippets, PageDocument};
 
 const PATH: &str = "dev/rust/page-compiler-tauri/src-tauri/src/data.db";
 
@@ -76,7 +76,7 @@ async fn load_snippets() -> Result<CorpusSnippets, Error> {
 }
 
 #[tauri::command]
-async fn fetch_marked_document() -> Result<String, Error> {
+async fn fetch_marked_document() -> Result<PageDocument, Error> {
     let path = home_dir()
         .expect("Unable to find home directory")
         .join(PATH)
