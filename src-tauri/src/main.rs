@@ -1,5 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-  page_compiler_tauri_lib::run();
+    page_writer_lib::run();
 }

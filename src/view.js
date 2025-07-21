@@ -20,13 +20,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   document_title.innerText = marked_document.document_name;
 
   let snippet_container = document.getElementById('snippet');
-  document.body.appendChild(document_title);
+  snippet_container.appendChild(document_title);
 
   snippets.forEach(snippet => {
     const card = document.createElement('div');
-    card.className = "card";
+    //    card.className = "card";
     card.innerHTML = snippet.markdown;
-    document.body.appendChild(card);
+    snippet_container.appendChild(card);
   })
 });
 

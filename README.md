@@ -10,7 +10,7 @@ They are currently pieces of markdown which is stored in a Sqlite database, **ho
 
 - The user has the ability to quickly and easily merge notes with a specific document by simply giving a name of an existing document, if it doesn't exist then a document with the corresponding name will be created.
 
-- Notes without an entered name will merge or create a new document automatically by Page-Writer by using numerous algorithms against the existing documents and notes to make a decision. **(this feature will have varying results if the database is too small, so for the best results only use this feature when there is a reasonable population of documents and notes)**
+- Notes without an entered name will merge or create a new document automatically by Page-Writer by using numerous algorithms against the existing documents and notes to make a decision. **(this feature currently will have varying results if the database is too small, so for the best results only use this feature when there is a reasonable population of documents and notes)**
 
 ### Keybinds
 
@@ -37,3 +37,7 @@ Settings? : Escape
 - Markdown imported and exporter, both file and directory based.
 
 - Potentially multiple databases.
+
+- Windows and Android support (no plans for Ios or MAC as of writing).
+
+- Spellchecker?

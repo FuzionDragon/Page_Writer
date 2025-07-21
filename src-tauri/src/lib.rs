@@ -6,7 +6,7 @@ use brain_compiler::submit_snippet;
 
 use crate::brain_compiler::{sqlite_interface, CorpusSnippets, PageDocument};
 
-const PATH: &str = "dev/rust/page-compiler-tauri/src-tauri/src/data.db";
+const PATH: &str = "dev/rust/Page_Writer/src-tauri/src/data.db";
 
 #[derive(Debug, thiserror::Error)]
 enum Error {

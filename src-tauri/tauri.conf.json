@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "page-compiler-tauri",
+  "productName": "Page_Writer",
   "version": "0.1.0",
-  "identifier": "com.davidl.page-compiler-tauri",
+  "identifier": "com.davidl.page_writer",
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "page-compiler-tauri",
+        "title": "Page_Writer",
         "width": 800,
         "height": 600
       }
