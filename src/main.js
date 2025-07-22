@@ -3,6 +3,13 @@ import { invoke } from '@tauri-apps/api/core';
 const snippet_input = document.getElementById('snippet-input');
 const title_input = document.getElementById('title-input');
 
+document.addEventListener("DOMContentLoaded", async () => {
+  const marked_document = await invoke('fetch_marked_document')
+    .catch((error) => console.log("Error caught:" + error));
+
+  document.getElementById('marked_document').innerText = marked_document.document_name;
+})
+
 const submit = function() {
   invoke('submit', { snippet: snippet_input.value, title: title_input.value })
     .catch((error) => console.log(error));

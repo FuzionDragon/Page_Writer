@@ -13,8 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     })
   );
 
-  let marked_document_label = document.getElementById('marked_document');
-  marked_document_label.innerText = marked_document.document_name;
+  document.getElementById('marked_document').innerText = marked_document.document_name;
 
   const document_title = document.createElement('h1');
   document_title.innerText = marked_document.document_name;

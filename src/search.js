@@ -67,7 +67,7 @@ document.onkeydown = function(e) {
   }
 }
 
-picker_button.onclick = function() {
+document.getElementById("marked_document").onclick = function() {
   toggle_picker();
 };
 
@@ -76,21 +76,14 @@ input.onkeydown = function(e) {
     if (results.length > 0 && Array.isArray(results)) {
       console.log("Results found");
       invoke("mark_document", { documentName: results[0].item });
+      document.getElementById("marked_document").innerText = results[0].item;
 
-      if (document.body.id === "index") {
-      }
       if (document.body.id === "view") {
-        document.getElementById("marked_document").innerText = results[0].item;
         update_view();
       }
     } else {
       console.log("No results found");
-      if (document.body.id === "index") {
-      }
-      if (document.body.id === "view") {
-        document.getElementById("marked_document").innerText = "NONE";
-        update_view();
-      }
+      document.getElementById("marked_document").innerText = "NONE";
     }
 
     input.value = "";
@@ -112,9 +105,6 @@ const update_view = async () => {
       markdown: marked.parse(snippet)
     })
   );
-
-  let marked_document_label = document.getElementById('marked_document');
-  marked_document_label.innerText = marked_document.document_name;
 
   const document_title = document.createElement('h1');
   document_title.innerText = marked_document.document_name;
