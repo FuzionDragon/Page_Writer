@@ -5,15 +5,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   const marked_document = await invoke('fetch_marked_document')
     .catch((error) => console.log("Error caught:" + error));
 
-  const snippets = [];
-  marked_document.snippets.forEach(snippet =>
-    snippets.push({
-      raw: snippet,
-      markdown: marked.parse(snippet)
-    })
-  );
+  let document_name = "None";
 
-  document.getElementById('marked_document').innerText = marked_document.document_name;
+  const snippets = [];
+  if (marked_document != null) {
+    document_name = marked_document.document_name;
+    marked_document.snippets.forEach(snippet =>
+      snippets.push({
+        raw: snippet,
+        markdown: marked.parse(snippet)
+      })
+    );
+  }
+
+  document.getElementById('marked_document').innerText = document_name;
 
   const document_title = document.createElement('h1');
   document_title.innerText = marked_document.document_name;

@@ -73,41 +73,48 @@ document.getElementById("marked_document").onclick = function() {
 
 input.onkeydown = function(e) {
   if (e.key === "Enter") {
+    let document_name = "None";
     if (results.length > 0 && Array.isArray(results)) {
       console.log("Results found");
-      invoke("mark_document", { documentName: results[0].item });
-      document.getElementById("marked_document").innerText = results[0].item;
-
-      if (document.body.id === "view") {
-        update_view();
-      }
+      document_name = results[0].item;
     } else {
       console.log("No results found");
-      document.getElementById("marked_document").innerText = "NONE";
     }
 
-    input.value = "";
     toggle_picker();
+    invoke("mark_document", { documentName: document_name }).then(() => {
+      if (document.body.id === "view") {
+        console.log("Updating view");
+        update_view();
+      }
+    });
+    document.getElementById("marked_document").innerText = document_name;
+    input.value = "";
   }
 }
 
 const update_view = async () => {
   let snippet_container = document.getElementById('snippet');
   snippet_container.innerHTML = "";
+  let document_name = "None";
 
   const marked_document = await invoke('fetch_marked_document')
     .catch((error) => console.log("Error caught:" + error));
+  console.log(marked_document);
 
   const snippets = [];
-  marked_document.snippets.forEach(snippet =>
-    snippets.push({
-      raw: snippet,
-      markdown: marked.parse(snippet)
-    })
-  );
+  if (marked_document !== null) {
+    document_name = marked_document.document_name;
+    marked_document.snippets.forEach(snippet =>
+      snippets.push({
+        raw: snippet,
+        markdown: marked.parse(snippet)
+      })
+    );
+  }
 
   const document_title = document.createElement('h1');
-  document_title.innerText = marked_document.document_name;
+  document_title.innerText = document_name;
 
   snippet_container.appendChild(document_title);
 

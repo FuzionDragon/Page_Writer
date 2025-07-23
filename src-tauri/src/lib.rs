@@ -76,7 +76,7 @@ async fn load_snippets() -> Result<CorpusSnippets, Error> {
 }
 
 #[tauri::command]
-async fn fetch_marked_document() -> Result<PageDocument, Error> {
+async fn fetch_marked_document() -> Result<Option<PageDocument>, Error> {
     let path = home_dir()
         .expect("Unable to find home directory")
         .join(PATH)
@@ -95,7 +95,11 @@ async fn fetch_marked_document() -> Result<PageDocument, Error> {
 
     let marked_document = sqlite_interface::fetch_marked_document(&db).await?;
 
-    Ok(marked_document)
+    if let Some(marked_document) = marked_document {
+        Ok(Some(marked_document))
+    } else {
+        Ok(None)
+    }
 }
 
 #[tauri::command]
