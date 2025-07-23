@@ -20,6 +20,7 @@ pub struct PageDocument {
 }
 
 const COSINE_WEIGHT: f32 = 0.6;
+const LATEST_BIAS: f32 = 0.25;
 const THESHOLD: f32 = 0.4;
 
 pub async fn submit_snippet(
@@ -52,12 +53,30 @@ pub async fn submit_snippet(
         sqlite_interface::set_latest_document(db, title.trim()).await?;
     } else {
         let first_line = snippet.lines().collect::<Vec<&str>>()[0];
+        let marked_document = sqlite_interface::fetch_marked_document(db).await?;
+        let latest_document = sqlite_interface::fetch_latest_document(db).await?;
+
+        if let Some(marked_document) = marked_document {
+            sqlite_interface::add_snippet(db, snippet, &marked_document.document_name).await?;
+            sqlite_interface::update_tfidf_data(
+                db,
+                input_tfidf_data,
+                &marked_document.document_name,
+            )
+            .await?;
+            sqlite_interface::update_rake_data(db, input_rake_data, &marked_document.document_name)
+                .await?;
+            return Ok(());
+        }
+
         let scores = combined_similarity_scores(
             input_tfidf_data.clone(),
             input_rake_data.clone(),
             corpus_tfidf_data,
             corpus_rake_data,
             COSINE_WEIGHT,
+            LATEST_BIAS,
+            latest_document,
         );
 
         if scores.is_empty() {
@@ -112,6 +131,8 @@ fn combined_similarity_scores(
     corpus_tfidf_data: CorpusSnippets,
     corpus_rake_data: CorpusSnippets,
     cosine_weight: f32,
+    latest_bias: f32,
+    latest_document: Option<PageDocument>,
 ) -> Vec<(String, f32)> {
     let corpus_tfidf_scores = tf_idf::corpus_tf_idf_hash(corpus_tfidf_data.clone());
     let corpus_rake_scores = rake::corpus_rake(corpus_rake_data.clone());
@@ -148,10 +169,23 @@ fn combined_similarity_scores(
             corpus_rake_score,
         ) * (1. - cosine_weight);
 
-        combined_scores.insert(
-            document.to_string(),
-            cosine_similarity_score + weighted_jaccard_similarity_score,
-        );
+        match &latest_document {
+            Some(latest_document) => {
+                if latest_document.document_name == document {
+                    combined_scores.insert(
+                        document.to_string(),
+                        cosine_similarity_score + weighted_jaccard_similarity_score + latest_bias,
+                    );
+                }
+            }
+
+            None => {
+                combined_scores.insert(
+                    document.to_string(),
+                    cosine_similarity_score + weighted_jaccard_similarity_score,
+                );
+            }
+        }
     }
 
     let mut sorted_scores: Vec<(String, f32)> = combined_scores.into_iter().collect();

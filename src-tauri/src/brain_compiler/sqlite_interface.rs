@@ -231,36 +231,36 @@ pub async fn set_marked_document(db: &SqlitePool, document: &str) -> Result<()> 
         .execute(db)
         .await?;
 
-    sqlx::query("UPDATE Document SET is_marked = 1 WHERE document_name = $1;")
-        .bind(document)
-        .execute(db)
-        .await?;
+    if document != "NONE" {
+        sqlx::query("UPDATE Document SET is_marked = 1 WHERE document_name = $1;")
+            .bind(document)
+            .execute(db)
+            .await?;
+    }
 
     Ok(())
 }
 
-pub async fn fetch_marked_document(db: &SqlitePool) -> Result<PageDocument> {
+pub async fn fetch_marked_document(db: &SqlitePool) -> Result<Option<PageDocument>> {
     let snippets = sqlx::query_as::<_, Snippet>(
         r#"
         SELECT Document.document_name, snippet FROM Snippet
-        LEFT JOIN Document ON Snippet.document_id == Document.document_id;
+        LEFT JOIN Document ON Snippet.document_id == Document.document_id
+        WHERE Document.is_marked = 1;
       "#,
     )
     .fetch_all(db)
     .await?;
 
     if snippets.is_empty() {
-        let empty: Vec<String> = Vec::new();
-        Ok(PageDocument {
-            document_name: "NONE".to_string(),
-            snippets: empty,
-        })
+        Ok(None)
     } else {
         let all_snippets: Vec<String> = snippets.iter().map(|v| v.snippet.clone()).collect();
-        Ok(PageDocument {
+        let page_document = PageDocument {
             document_name: snippets[0].document_name.clone(),
             snippets: all_snippets,
-        })
+        };
+        Ok(Some(page_document))
     }
 }
 
@@ -275,6 +275,29 @@ pub async fn set_latest_document(db: &SqlitePool, document: &str) -> Result<()> 
         .await?;
 
     Ok(())
+}
+
+pub async fn fetch_latest_document(db: &SqlitePool) -> Result<Option<PageDocument>> {
+    let snippets = sqlx::query_as::<_, Snippet>(
+        r#"
+        SELECT Document.document_name, snippet FROM Snippet
+        LEFT JOIN Document ON Snippet.document_id == Document.document_id
+        WHERE Document.is_last = 1;
+      "#,
+    )
+    .fetch_all(db)
+    .await?;
+
+    if snippets.is_empty() {
+        Ok(None)
+    } else {
+        let all_snippets: Vec<String> = snippets.iter().map(|v| v.snippet.clone()).collect();
+        let page_document = PageDocument {
+            document_name: snippets[0].document_name.clone(),
+            snippets: all_snippets,
+        };
+        Ok(Some(page_document))
+    }
 }
 
 pub async fn add_snippet_with_id(db: &SqlitePool, snippet: &str, document_id: i32) -> Result<()> {
