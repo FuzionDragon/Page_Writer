@@ -2,7 +2,8 @@ use human_regex::{one_or_more, punctuation};
 use rust_stemmers::{Algorithm, Stemmer};
 use std::collections::HashMap;
 
-use super::{Corpus, CorpusSnippets};
+use super::CorpusSnippets;
+type Corpus = HashMap<String, String>;
 
 pub fn corpus_tfidf_preprocess(corpus: Corpus, stop_words: Vec<String>) -> CorpusSnippets {
     let mut processed: CorpusSnippets = HashMap::new();

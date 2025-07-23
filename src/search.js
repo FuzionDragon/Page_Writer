@@ -118,10 +118,43 @@ const update_view = async () => {
 
   snippet_container.appendChild(document_title);
 
-  snippets.forEach(snippet => {
-    const card = document.createElement('div');
-    //    card.className = "card";
-    card.innerHTML = snippet.markdown;
-    snippet_container.appendChild(card);
-  })
+  for (let id = 0; id < snippets.length; id++) {
+    let snippet = snippets[id];
+    const view_card = document.createElement('div');
+    view_card.innerHTML = snippet.markdown;
+    view_card.id = id;
+    view_card.onclick = editSnippet(id);
+
+    snippet_container.appendChild(view_card);
+  }
+}
+
+const editSnippet = (id) => {
+  const view_card = document.getElementById(id);
+  const edit_card = document.createElement('textarea');
+  edit_card.id = view_card.id;
+  edit_card.innerText = snippets[id].raw;
+
+  view_card.replaceWith(edit_card);
+  edit_card.focus();
+
+  edit_card.onblur = () => saveSnippet(edit_card, id);
+  edit_card.onkeydown = (e) => {
+    if (e.ctrlKey && e.key === "Enter") {
+      saveSnippet(edit_card, id);
+    }
+  }
+}
+
+const saveSnippet = (edit_card, id) => {
+  const content = marked.parse(edit_card.value);
+  snippets[id].raw = edit_card.value;
+  snippets[id].markdown = content;
+
+  const view_card = document.createElement('div');
+  view_card.innerHTML = content;
+  view_card.id = id;
+  view_card.onclick = editSnippet(id);
+
+  edit_card.replaceWith(view_card);
 }

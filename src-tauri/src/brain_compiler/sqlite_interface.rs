@@ -3,10 +3,19 @@ use std::collections::HashMap;
 use anyhow::{Ok, Result};
 use sqlx::{FromRow, SqlitePool};
 
+use crate::brain_compiler::{MarkedDocument, SnippetEntry};
+
 use super::{Corpus, CorpusSnippets, PageDocument};
 
 #[derive(Debug, FromRow, Clone)]
 pub struct Snippet {
+    snippet: String,
+    document_name: String,
+}
+
+#[derive(Debug, FromRow, Clone)]
+pub struct MarkedSnippet {
+    snippet_id: i32,
     snippet: String,
     document_name: String,
 }
@@ -99,8 +108,8 @@ pub async fn init(db: &SqlitePool) -> Result<()> {
 pub async fn load_corpus_snippets(db: &SqlitePool) -> Result<CorpusSnippets> {
     let snippets = sqlx::query_as::<_, Snippet>(
         r#"
-    SELECT Document.document_name, snippet FROM Snippet
-    LEFT JOIN Document ON Snippet.document_id == Document.document_id;
+    SELECT snippet, Document.document_name FROM Snippet
+    JOIN Document ON Snippet.document_id == Document.document_id;
   "#,
     )
     .fetch_all(db)
@@ -176,6 +185,21 @@ pub async fn load_rake_data(db: &SqlitePool) -> Result<CorpusSnippets> {
     Ok(corpus_phrases)
 }
 
+pub async fn load_snippets(db: &SqlitePool, document_name: &str) -> Result<Vec<Snippet>> {
+    let snippets = sqlx::query_as::<_, Snippet>(
+        r#"
+        SELECT snippet, Document.document_name FROM Snippet
+    JOIN Document ON Snippet.document_id == Document.document_id
+    WHERE document_name = $1;
+  "#,
+    )
+    .bind(document_name)
+    .fetch_all(db)
+    .await?;
+
+    Ok(snippets)
+}
+
 pub async fn update_tfidf_data(db: &SqlitePool, terms: Vec<String>, document: &str) -> Result<()> {
     let document_row = sqlx::query_as::<_, DocumentRow>(
         "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
@@ -241,11 +265,11 @@ pub async fn set_marked_document(db: &SqlitePool, document: &str) -> Result<()> 
     Ok(())
 }
 
-pub async fn fetch_marked_document(db: &SqlitePool) -> Result<Option<PageDocument>> {
-    let snippets = sqlx::query_as::<_, Snippet>(
+pub async fn fetch_marked_document(db: &SqlitePool) -> Result<Option<MarkedDocument>> {
+    let snippets = sqlx::query_as::<_, MarkedSnippet>(
         r#"
-        SELECT Document.document_name, snippet FROM Snippet
-        LEFT JOIN Document ON Snippet.document_id == Document.document_id
+        SELECT snippet_id, snippet, Document.document_name FROM Snippet
+        JOIN Document ON Snippet.document_id == Document.document_id
         WHERE Document.is_marked = 1;
       "#,
     )
@@ -255,8 +279,14 @@ pub async fn fetch_marked_document(db: &SqlitePool) -> Result<Option<PageDocumen
     if snippets.is_empty() {
         Ok(None)
     } else {
-        let all_snippets: Vec<String> = snippets.iter().map(|v| v.snippet.clone()).collect();
-        let page_document = PageDocument {
+        let all_snippets: Vec<SnippetEntry> = snippets
+            .iter()
+            .map(|v| SnippetEntry {
+                snippet_id: v.snippet_id,
+                snippet: v.snippet.clone(),
+            })
+            .collect();
+        let page_document = MarkedDocument {
             document_name: snippets[0].document_name.clone(),
             snippets: all_snippets,
         };

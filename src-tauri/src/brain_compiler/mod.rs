@@ -19,6 +19,18 @@ pub struct PageDocument {
     snippets: Vec<String>,
 }
 
+#[derive(Deserialize, Serialize)]
+pub struct MarkedDocument {
+    document_name: String,
+    snippets: Vec<SnippetEntry>,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct SnippetEntry {
+    snippet_id: i32,
+    snippet: String,
+}
+
 const COSINE_WEIGHT: f32 = 0.6;
 const LATEST_BIAS: f32 = 0.25;
 const THESHOLD: f32 = 0.4;

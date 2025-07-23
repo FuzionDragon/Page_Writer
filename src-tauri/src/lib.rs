@@ -4,7 +4,7 @@ use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 mod brain_compiler;
 use brain_compiler::submit_snippet;
 
-use crate::brain_compiler::{sqlite_interface, CorpusSnippets, PageDocument};
+use crate::brain_compiler::{sqlite_interface, CorpusSnippets, MarkedDocument};
 
 const PATH: &str = "dev/rust/Page_Writer/src-tauri/src/data.db";
 
@@ -55,6 +55,7 @@ async fn submit(snippet: String, title: String) -> Result<(), Error> {
 
 #[tauri::command]
 async fn load_snippets() -> Result<CorpusSnippets, Error> {
+    println!("Loading snippets");
     let path = home_dir()
         .expect("Unable to find home directory")
         .join(PATH)
@@ -76,7 +77,8 @@ async fn load_snippets() -> Result<CorpusSnippets, Error> {
 }
 
 #[tauri::command]
-async fn fetch_marked_document() -> Result<Option<PageDocument>, Error> {
+async fn fetch_marked_document() -> Result<Option<MarkedDocument>, Error> {
+    println!("Fetching marked document");
     let path = home_dir()
         .expect("Unable to find home directory")
         .join(PATH)
@@ -104,6 +106,7 @@ async fn fetch_marked_document() -> Result<Option<PageDocument>, Error> {
 
 #[tauri::command]
 async fn mark_document(document_name: String) -> Result<(), Error> {
+    println!("Marking documnet");
     let path = home_dir()
         .expect("Unable to find home directory")
         .join(PATH)
