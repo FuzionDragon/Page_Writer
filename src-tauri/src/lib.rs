@@ -2,7 +2,7 @@ use dirs::home_dir;
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 
 mod brain_compiler;
-use brain_compiler::submit_snippet;
+use brain_compiler::{submit_snippet, update_snippet};
 
 use crate::brain_compiler::{sqlite_interface, CorpusSnippets, MarkedDocument};
 
@@ -27,8 +27,7 @@ impl serde::Serialize for Error {
     }
 }
 
-#[tauri::command]
-async fn submit(snippet: String, title: String) -> Result<(), Error> {
+async fn setup_db() -> Result<SqlitePool, Error> {
     let path = home_dir()
         .expect("Unable to find home directory")
         .join(PATH)
@@ -42,7 +41,15 @@ async fn submit(snippet: String, title: String) -> Result<(), Error> {
     }
 
     let db = SqlitePool::connect(&path).await?;
+
     sqlite_interface::init(&db).await?;
+
+    Ok(db)
+}
+
+#[tauri::command]
+async fn submit(snippet: String, title: String) -> Result<(), Error> {
+    let db = setup_db().await?;
 
     if title.is_empty() {
         submit_snippet(&snippet, None, &db).await?;
@@ -54,22 +61,17 @@ async fn submit(snippet: String, title: String) -> Result<(), Error> {
 }
 
 #[tauri::command]
+async fn update(snippet_id: i32, snippet: String) -> Result<(), Error> {
+    let db = setup_db().await?;
+
+    update_snippet(&db, snippet_id, &snippet).await?;
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn load_snippets() -> Result<CorpusSnippets, Error> {
-    println!("Loading snippets");
-    let path = home_dir()
-        .expect("Unable to find home directory")
-        .join(PATH)
-        .into_os_string()
-        .into_string()
-        .unwrap();
-
-    if !Sqlite::database_exists(&path).await.unwrap_or(false) {
-        println!("Creating database: {}", &path);
-        Sqlite::create_database(&path).await?;
-    }
-
-    let db = SqlitePool::connect(&path).await?;
-    sqlite_interface::init(&db).await?;
+    let db = setup_db().await?;
 
     let result = sqlite_interface::load_corpus_snippets(&db).await?;
 
@@ -77,23 +79,15 @@ async fn load_snippets() -> Result<CorpusSnippets, Error> {
 }
 
 #[tauri::command]
+async fn print(text: String) -> Result<(), Error> {
+    println!("Printing {text}");
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn fetch_marked_document() -> Result<Option<MarkedDocument>, Error> {
-    println!("Fetching marked document");
-    let path = home_dir()
-        .expect("Unable to find home directory")
-        .join(PATH)
-        .into_os_string()
-        .into_string()
-        .unwrap();
-
-    if !Sqlite::database_exists(&path).await.unwrap_or(false) {
-        println!("Creating database: {}", &path);
-        Sqlite::create_database(&path).await?;
-    }
-
-    let db = SqlitePool::connect(&path).await?;
-
-    sqlite_interface::init(&db).await?;
+    let db = setup_db().await?;
 
     let marked_document = sqlite_interface::fetch_marked_document(&db).await?;
 
@@ -106,22 +100,7 @@ async fn fetch_marked_document() -> Result<Option<MarkedDocument>, Error> {
 
 #[tauri::command]
 async fn mark_document(document_name: String) -> Result<(), Error> {
-    println!("Marking documnet");
-    let path = home_dir()
-        .expect("Unable to find home directory")
-        .join(PATH)
-        .into_os_string()
-        .into_string()
-        .unwrap();
-
-    if !Sqlite::database_exists(&path).await.unwrap_or(false) {
-        println!("Creating database: {}", &path);
-        Sqlite::create_database(&path).await?;
-    }
-
-    let db = SqlitePool::connect(&path).await?;
-
-    sqlite_interface::init(&db).await?;
+    let db = setup_db().await?;
 
     sqlite_interface::set_marked_document(&db, &document_name).await?;
 
@@ -134,9 +113,11 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             submit,
+            update,
             load_snippets,
             mark_document,
             fetch_marked_document,
+            print,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

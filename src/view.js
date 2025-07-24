@@ -1,13 +1,15 @@
 import { invoke } from '@tauri-apps/api/core';
 import { marked } from 'marked';
 
-let snippets = [];
+export let snippets = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
+  renderView()
+});
+
+const renderView = async () => {
   const marked_document = await invoke('fetch_marked_document')
     .catch((error) => console.log("Error caught:" + error));
-  console.log(marked_document);
-
   let document_name = "None";
 
   if (marked_document != null) {
@@ -21,7 +23,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       })
     );
   }
-  console.log(snippets);
 
   document.getElementById('marked_document').innerText = document_name;
 
@@ -31,26 +32,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   let snippet_container = document.getElementById('snippet');
   snippet_container.appendChild(document_title);
 
-  for (let id = 0; id < snippets.length; id++) {
-    let snippet = snippets[id];
-    console.log(id);
+  for (const snippet of snippets.entries()) {
     const view_card = document.createElement('div');
-    view_card.innerHTML = snippet.markdown;
-    view_card.id = id;
+    view_card.innerHTML = snippet[1].markdown;
+    view_card.id = snippet[1].snippet_id;
     view_card.onclick = () => editSnippet(view_card);
-    console.log(id);
 
     snippet_container.appendChild(view_card);
   }
-});
+}
 
 const editSnippet = (view_card) => {
   const edit_card = document.createElement('textarea');
   const id = view_card.id;
-  console.log(id);
+  const snippet = snippets.find(i => i.snippet_id === parseInt(id));
   edit_card.id = id;
-  console.log(snippets[id]);
-  edit_card.value = snippets[id].raw;
+  edit_card.value = snippet.raw;
 
   view_card.replaceWith(edit_card);
   edit_card.focus();
@@ -65,12 +62,14 @@ const editSnippet = (view_card) => {
 
 const saveSnippet = (edit_card, id) => {
   const content = marked.parse(edit_card.value);
-  snippets[id].raw = edit_card.value;
-  snippets[id].markdown = content;
+  const snippet = snippets.find(i => i.snippet_id === parseInt(id));
+  snippet.raw = edit_card.value;
+  snippet.markdown = content;
 
   const view_card = document.createElement('div');
   view_card.innerHTML = content;
   view_card.id = id;
+  invoke('update', { snippetId: parseInt(id), snippet: edit_card.value, documentName: snippet.document_name });
   view_card.onclick = () => editSnippet(view_card);
   edit_card.replaceWith(view_card);
 }

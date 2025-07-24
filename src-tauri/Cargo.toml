@@ -27,7 +27,6 @@ stop-words = "0.8.1"
 whatlang = "0.16.4"
 human_regex = "0.3.0"
 thiserror = "2.0.12"
-rand = "0.9.1"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

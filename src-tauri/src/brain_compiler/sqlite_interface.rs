@@ -200,6 +200,70 @@ pub async fn load_snippets(db: &SqlitePool, document_name: &str) -> Result<Vec<S
     Ok(snippets)
 }
 
+pub async fn delete_snippet(db: &SqlitePool, snippet_id: i32) -> Result<()> {
+    sqlx::query("DELETE FROM TFIDF_Term WHERE snippet_id = $1")
+        .bind(snippet_id)
+        .execute(db)
+        .await?;
+    sqlx::query("DELETE FROM RAKE_Phrase WHERE snippet_id = $1")
+        .bind(snippet_id)
+        .execute(db)
+        .await?;
+    sqlx::query("DELETE FROM Snippet WHERE snippet_id = $1")
+        .bind(snippet_id)
+        .execute(db)
+        .await?;
+
+    Ok(())
+}
+
+pub async fn update_snippet(
+    db: &SqlitePool,
+    snippet_id: i32,
+    new_snippet: &str,
+    terms: Vec<String>,
+    phrases: Vec<String>,
+) -> Result<()> {
+    println!("{}", snippet_id);
+    println!("{}", new_snippet);
+    println!("Deleting tfidf");
+    sqlx::query("DELETE FROM TFIDF_Term WHERE snippet_id = $1;")
+        .bind(snippet_id)
+        .execute(db)
+        .await?;
+
+    println!("Deleting rake");
+    sqlx::query("DELETE FROM RAKE_Phrase WHERE snippet_id = $1;")
+        .bind(snippet_id)
+        .execute(db)
+        .await?;
+
+    println!("Updating snippet");
+    sqlx::query("UPDATE Snippet SET snippet = $1 WHERE snippet_id = $2;")
+        .bind(new_snippet)
+        .bind(snippet_id)
+        .execute(db)
+        .await?;
+
+    println!("Fetching document_name");
+    let snippet = sqlx::query_as::<_, Snippet>(
+        r#"
+        SELECT snippet, Document.document_name FROM Snippet
+        JOIN Document ON Snippet.document_id == Document.document_id
+        WHERE snippet_id = $1;
+      "#,
+    )
+    .bind(snippet_id)
+    .fetch_one(db)
+    .await?;
+    println!("{:?}", snippet.clone());
+
+    update_tfidf_data(db, terms, &snippet.document_name).await?;
+    update_rake_data(db, phrases, &snippet.document_name).await?;
+
+    Ok(())
+}
+
 pub async fn update_tfidf_data(db: &SqlitePool, terms: Vec<String>, document: &str) -> Result<()> {
     let document_row = sqlx::query_as::<_, DocumentRow>(
         "SELECT document_id, document_name FROM Document WHERE document_name = $1;",

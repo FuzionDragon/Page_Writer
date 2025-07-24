@@ -137,6 +137,30 @@ pub async fn submit_snippet(
     Ok(())
 }
 
+pub async fn update_snippet(
+    db: &SqlitePool,
+    snippet_id: i32,
+    snippet: &str,
+) -> Result<(), anyhow::Error> {
+    println!("Updating");
+
+    if snippet.is_empty() {
+        println!("Snippet is empty");
+        return Ok(());
+    };
+
+    let stop_words = get(LANGUAGE::English);
+
+    let input_tfidf_data = preprocess::tfidf_preprocess(snippet, stop_words.clone());
+    let input_rake_data = preprocess::rake_preprocess(snippet, stop_words.clone());
+
+    println!("Updating snippet");
+    sqlite_interface::update_snippet(db, snippet_id, snippet, input_tfidf_data, input_rake_data)
+        .await?;
+
+    Ok(())
+}
+
 fn combined_similarity_scores(
     input_tfidf_data: Vec<String>,
     input_rake_data: Vec<String>,
