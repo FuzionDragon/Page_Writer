@@ -217,6 +217,27 @@ pub async fn delete_snippet(db: &SqlitePool, snippet_id: i32) -> Result<()> {
     Ok(())
 }
 
+pub async fn delete_document(db: &SqlitePool, document_name: &str) -> Result<()> {
+    let document_id = sqlx::query_as::<_, DocumentRow>(
+        "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
+    )
+    .bind(document_name)
+    .fetch_one(db)
+    .await?
+    .document_id;
+
+    let snippets = sqlx::query_as::<_, SnippetRow>("SELECT * FROM Snippet WHERE document_id = $1;")
+        .bind(document_id)
+        .fetch_all(db)
+        .await?;
+
+    for snippet in snippets {
+        delete_snippet(db, snippet.snippet_id).await?;
+    }
+
+    Ok(())
+}
+
 pub async fn update_snippet(
     db: &SqlitePool,
     snippet_id: i32,
@@ -224,28 +245,22 @@ pub async fn update_snippet(
     terms: Vec<String>,
     phrases: Vec<String>,
 ) -> Result<()> {
-    println!("{}", snippet_id);
-    println!("{}", new_snippet);
-    println!("Deleting tfidf");
     sqlx::query("DELETE FROM TFIDF_Term WHERE snippet_id = $1;")
         .bind(snippet_id)
         .execute(db)
         .await?;
 
-    println!("Deleting rake");
     sqlx::query("DELETE FROM RAKE_Phrase WHERE snippet_id = $1;")
         .bind(snippet_id)
         .execute(db)
         .await?;
 
-    println!("Updating snippet");
     sqlx::query("UPDATE Snippet SET snippet = $1 WHERE snippet_id = $2;")
         .bind(new_snippet)
         .bind(snippet_id)
         .execute(db)
         .await?;
 
-    println!("Fetching document_name");
     let snippet = sqlx::query_as::<_, Snippet>(
         r#"
         SELECT snippet, Document.document_name FROM Snippet
@@ -256,7 +271,6 @@ pub async fn update_snippet(
     .bind(snippet_id)
     .fetch_one(db)
     .await?;
-    println!("{:?}", snippet.clone());
 
     update_tfidf_data(db, terms, &snippet.document_name).await?;
     update_rake_data(db, phrases, &snippet.document_name).await?;

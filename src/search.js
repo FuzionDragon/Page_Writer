@@ -64,6 +64,7 @@ document.oninput = function(e) {
 document.onkeydown = function(e) {
   if (e.ctrlKey && e.key === "e") {
     toggle_picker();
+    input.onkeydown = (e) => mark_document_bind(e);
   }
 }
 
@@ -71,7 +72,7 @@ document.getElementById("marked_document").onclick = function() {
   toggle_picker();
 };
 
-input.onkeydown = function(e) {
+const mark_document_bind = (e) => {
   if (e.key === "Enter") {
     let document_name = "None";
     if (results.length > 0 && Array.isArray(results)) {

@@ -142,10 +142,9 @@ pub async fn update_snippet(
     snippet_id: i32,
     snippet: &str,
 ) -> Result<(), anyhow::Error> {
-    println!("Updating");
-
     if snippet.is_empty() {
         println!("Snippet is empty");
+        sqlite_interface::delete_snippet(db, snippet_id).await?;
         return Ok(());
     };
 
@@ -154,7 +153,6 @@ pub async fn update_snippet(
     let input_tfidf_data = preprocess::tfidf_preprocess(snippet, stop_words.clone());
     let input_rake_data = preprocess::rake_preprocess(snippet, stop_words.clone());
 
-    println!("Updating snippet");
     sqlite_interface::update_snippet(db, snippet_id, snippet, input_tfidf_data, input_rake_data)
         .await?;
 

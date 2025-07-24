@@ -107,6 +107,24 @@ async fn mark_document(document_name: String) -> Result<(), Error> {
     Ok(())
 }
 
+#[tauri::command]
+async fn delete_document(document_name: String) -> Result<(), Error> {
+    let db = setup_db().await?;
+
+    sqlite_interface::delete_document(&db, &document_name).await?;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn delete_snippet(snippet_id: i32) -> Result<(), Error> {
+    let db = setup_db().await?;
+
+    sqlite_interface::delete_snippet(&db, snippet_id).await?;
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -117,6 +135,8 @@ pub fn run() {
             load_snippets,
             mark_document,
             fetch_marked_document,
+            delete_document,
+            delete_snippet,
             print,
         ])
         .run(tauri::generate_context!())
