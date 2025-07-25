@@ -39,7 +39,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const corpus = await invoke('load_snippets')
     .catch((error) => console.log("error caught:" + error));
 
-  console.log("Object: " + corpus);
   fuse = new Fuse(Object.keys(corpus), {
     keys: ['title'],
     threshold: 0.4
@@ -63,14 +62,40 @@ document.oninput = function(e) {
 
 document.onkeydown = function(e) {
   if (e.ctrlKey && e.key === "e") {
+    console.log("Loading picker for marked docs");
     toggle_picker();
     input.onkeydown = (e) => mark_document_bind(e);
+  }
+  if (e.ctrlKey && e.key === "f") {
+    console.log("Loading picker for local docs");
+    toggle_picker();
+    input.onkeydown = (e) => load_document_bind(e);
   }
 }
 
 document.getElementById("marked_document").onclick = function() {
   toggle_picker();
 };
+
+const load_document_bind = (e) => {
+  if (e.key === "Enter") {
+    let document_name = "None";
+    if (results.length > 0 && Array.isArray(results)) {
+      console.log("Results found");
+      document_name = results[0].item;
+    } else {
+      console.log("No results found");
+    }
+    toggle_picker();
+    if (document.body.id === "view") {
+      update_view(document_name);
+    }
+
+    document.getElementById("current_document").innerText = document_name;
+    localStorage['current_document'] = document_name;
+    input.value = "";
+  }
+}
 
 const mark_document_bind = (e) => {
   if (e.key === "Enter") {
@@ -85,8 +110,9 @@ const mark_document_bind = (e) => {
     toggle_picker();
     invoke("mark_document", { documentName: document_name }).then(() => {
       if (document.body.id === "view") {
-        console.log("Updating view");
-        update_view();
+        //  const marked_document = await invoke('fetch_marked_document')
+        //    .catch((error) => console.log("Error caught:" + error));
+        //  console.log(marked_document);
       }
     });
     document.getElementById("marked_document").innerText = document_name;
@@ -95,20 +121,19 @@ const mark_document_bind = (e) => {
 }
 
 const snippets = [];
-const update_view = async () => {
+const update_view = async (search_document) => {
   let snippet_container = document.getElementById('snippet');
   snippet_container.innerHTML = "";
-  const marked_document = await invoke('fetch_marked_document')
+
+  const viewed_document = await invoke('load_document', { documentName: search_document })
     .catch((error) => console.log("Error caught:" + error));
-  console.log(marked_document);
   let document_name = "None";
 
-
-  if (marked_document != null) {
-    document_name = marked_document.document_name;
-    marked_document.snippets.forEach(snippet =>
+  if (viewed_document != null) {
+    document_name = viewed_document.document_name;
+    viewed_document.snippets.forEach(snippet =>
       snippets.push({
-        document_name: marked_document.document_name,
+        document_name: viewed_document.document_name,
         snippet_id: snippet.snippet_id,
         raw: snippet.snippet,
         markdown: marked.parse(snippet.snippet),

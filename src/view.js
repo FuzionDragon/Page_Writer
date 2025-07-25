@@ -4,19 +4,19 @@ import { marked } from 'marked';
 export let snippets = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
-  renderView()
+  renderView(localStorage['current_document']);
 });
 
-const renderView = async () => {
-  const marked_document = await invoke('fetch_marked_document')
+const renderView = async (search_document) => {
+  const viewed_document = await invoke('load_document', { documentName: search_document })
     .catch((error) => console.log("Error caught:" + error));
   let document_name = "None";
 
-  if (marked_document != null) {
-    document_name = marked_document.document_name;
-    marked_document.snippets.forEach(snippet =>
+  if (viewed_document != null) {
+    document_name = viewed_document.document_name;
+    viewed_document.snippets.forEach(snippet =>
       snippets.push({
-        document_name: marked_document.document_name,
+        document_name: viewed_document.document_name,
         snippet_id: snippet.snippet_id,
         raw: snippet.snippet,
         markdown: marked.parse(snippet.snippet),
@@ -27,7 +27,19 @@ const renderView = async () => {
   document.getElementById('marked_document').innerText = document_name;
 
   const document_title = document.createElement('h1');
-  document_title.innerText = marked_document.document_name;
+  document_title.innerText = viewed_document.document_name;
+
+  if (document_name === "None") {
+    document.getElementById('rightnav').hidden = true;
+  } else {
+    document.getElementById('rightnav').hidden = false;
+  }
+
+  if (localStorage['current_document'] === null) {
+    localStorage['current_document'] = "None";
+  }
+
+  document.getElementById('current_document').innerText = localStorage['current_document'];
 
   let snippet_container = document.getElementById('snippet');
   snippet_container.appendChild(document_title);

@@ -200,6 +200,39 @@ pub async fn load_snippets(db: &SqlitePool, document_name: &str) -> Result<Vec<S
     Ok(snippets)
 }
 
+pub async fn fetch_document(
+    db: &SqlitePool,
+    document_name: &str,
+) -> Result<Option<MarkedDocument>> {
+    let snippets = sqlx::query_as::<_, MarkedSnippet>(
+        r#"
+        SELECT snippet_id, snippet, Document.document_name FROM Snippet
+        JOIN Document ON Snippet.document_id == Document.document_id
+        WHERE Document.document_name = $1;
+      "#,
+    )
+    .bind(document_name)
+    .fetch_all(db)
+    .await?;
+
+    if snippets.is_empty() {
+        Ok(None)
+    } else {
+        let all_snippets: Vec<SnippetEntry> = snippets
+            .iter()
+            .map(|v| SnippetEntry {
+                snippet_id: v.snippet_id,
+                snippet: v.snippet.clone(),
+            })
+            .collect();
+        let page_document = MarkedDocument {
+            document_name: snippets[0].document_name.clone(),
+            snippets: all_snippets,
+        };
+        Ok(Some(page_document))
+    }
+}
+
 pub async fn delete_snippet(db: &SqlitePool, snippet_id: i32) -> Result<()> {
     sqlx::query("DELETE FROM TFIDF_Term WHERE snippet_id = $1")
         .bind(snippet_id)
@@ -459,16 +492,6 @@ pub async fn add_document(
     if document_exists {
         println!("Document with the corresponding title already exists");
 
-        let mut snippet_vec = snippet.split("\n").collect::<Vec<&str>>();
-        snippet_vec.remove(0);
-        if snippet_vec.is_empty() {
-            println!("Snippet is empty");
-            return Ok(false);
-        };
-        let new_snippet = snippet_vec.join("\n");
-
-        println!("New snippet: {:?}", new_snippet.clone());
-
         let document_row = sqlx::query_as::<_, DocumentRow>(
             "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
         )
@@ -478,7 +501,7 @@ pub async fn add_document(
 
         let document_id = document_row.document_id;
 
-        add_snippet_with_id(db, &new_snippet, document_id).await?;
+        add_snippet_with_id(db, snippet, document_id).await?;
         update_tfidf_data(db, tfidf_terms, document_name).await?;
         update_rake_data(db, rake_phrases, document_name).await?;
 

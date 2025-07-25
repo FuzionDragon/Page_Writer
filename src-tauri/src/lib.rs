@@ -79,6 +79,15 @@ async fn load_snippets() -> Result<CorpusSnippets, Error> {
 }
 
 #[tauri::command]
+async fn load_document(document_name: String) -> Result<Option<MarkedDocument>, Error> {
+    let db = setup_db().await?;
+
+    let result = sqlite_interface::fetch_document(&db, &document_name).await?;
+
+    Ok(result)
+}
+
+#[tauri::command]
 async fn print(text: String) -> Result<(), Error> {
     println!("Printing {text}");
 
@@ -133,6 +142,7 @@ pub fn run() {
             submit,
             update,
             load_snippets,
+            load_document,
             mark_document,
             fetch_marked_document,
             delete_document,

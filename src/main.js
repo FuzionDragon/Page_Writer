@@ -8,6 +8,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     .catch((error) => console.log("Error caught:" + error));
 
   document.getElementById('marked_document').innerText = marked_document.document_name;
+
+  if (marked_document.document_name === "None") {
+    document.getElementById('rightnav').hidden = true;
+  } else {
+    document.getElementById('rightnav').hidden = false;
+  }
+
+  if (localStorage['current_document'] === null) {
+    localStorage['current_document'] = "None";
+  }
+
+  document.getElementById('current_document').innerText = localStorage['current_document'];
 })
 
 const submit = function() {
