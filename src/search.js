@@ -75,6 +75,12 @@ document.onkeydown = function(e) {
 
 document.getElementById("marked_document").onclick = function() {
   toggle_picker();
+  input.onkeydown = (e) => mark_document_bind(e);
+};
+
+document.getElementById("current_document").onclick = function() {
+  toggle_picker();
+  input.onkeydown = (e) => load_document_bind(e);
 };
 
 const load_document_bind = (e) => {

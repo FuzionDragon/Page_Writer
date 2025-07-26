@@ -60,6 +60,10 @@ const editSnippet = (view_card) => {
   const snippet = snippets.find(i => i.snippet_id === parseInt(id));
   edit_card.id = id;
   edit_card.value = snippet.raw;
+  edit_card.oninput = () => {
+    edit_card.style.height = "";
+    edit_card.style.height = edit_card.scrollHeight + "px";
+  }
 
   view_card.replaceWith(edit_card);
   edit_card.focus();

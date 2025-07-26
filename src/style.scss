@@ -98,9 +98,11 @@ textarea {
   color: light-dark($background-color, $foreground-color);
   background-color: light-dark($foreground-color, $background-color);
   font-size: 1.2em;
-  width: 60%;
+  width: 80%;
+  height: auto;
   resize: none;
   outline: none;
+  overflow: hidden;
 }
 
 #leftnav {
@@ -135,10 +137,6 @@ textarea {
 
 #title-input {
   font-size: 1.6em;
-}
-
-#snippet-input {
-  height: 25em;
 }
 
 #document-picker {

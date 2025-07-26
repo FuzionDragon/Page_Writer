@@ -48,6 +48,11 @@ snippet_input.onkeydown = function(e) {
   }
 }
 
+snippet_input.oninput = () => {
+  snippet_input.style.height = "";
+  snippet_input.style.height = snippet_input.scrollHeight + "px";
+}
+
 window.onkeydown = function(e) {
   if (e.ctrlKey && e.key === "Enter") {
     submit();
