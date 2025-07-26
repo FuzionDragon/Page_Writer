@@ -361,6 +361,23 @@ pub async fn update_rake_data(db: &SqlitePool, phrases: Vec<String>, document: &
     Ok(())
 }
 
+pub async fn move_snippet(db: &SqlitePool, snippet_id: i32, document_name: &str) -> Result<()> {
+    let document_row = sqlx::query_as::<_, DocumentRow>(
+        "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
+    )
+    .bind(document_name)
+    .fetch_one(db)
+    .await?;
+
+    sqlx::query("UPDATE Snippet SET document_id = $1 WHERE snippet_id = $2;")
+        .bind(document_row.document_id)
+        .bind(snippet_id)
+        .execute(db)
+        .await?;
+
+    Ok(())
+}
+
 pub async fn set_marked_document(db: &SqlitePool, document: &str) -> Result<()> {
     sqlx::query("UPDATE Document SET is_marked = NULL WHERE is_marked = 1;")
         .execute(db)

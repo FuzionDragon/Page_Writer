@@ -143,6 +143,10 @@ textarea {
   display: none;
 }
 
+#snippet-context {
+  display: none;
+}
+
 #index {
   overflow: hidden;
   max-width: 70%;
@@ -186,6 +190,15 @@ textarea {
   margin: 8em;
   padding: 8em;
   align-content: center;
+}
+
+.overlay-snippet-context {
+  @include overlay;
+  @include border;
+  margin: 4em;
+  bottom: 0;
+  align-content: center;
+  padding: 0.5em;
 }
 
 .navbar {

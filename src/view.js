@@ -54,6 +54,15 @@ const renderView = async (search_document) => {
   }
 }
 
+const toggle_overlay = async () => {
+  const context = document.getElementById("snippet-context");
+  if (context.style.display === "block") {
+    context.style.display = "none";
+  } else {
+    context.style.display = "block";
+  }
+}
+
 const editSnippet = (view_card) => {
   const edit_card = document.createElement('textarea');
   const id = view_card.id;
@@ -67,8 +76,13 @@ const editSnippet = (view_card) => {
 
   view_card.replaceWith(edit_card);
   edit_card.focus();
+  toggle_overlay();
 
-  edit_card.onblur = () => saveSnippet(edit_card, view_card.id);
+  edit_card.onblur = () => {
+    saveSnippet(edit_card, view_card.id);
+    toggle_overlay();
+  }
+
   edit_card.onkeydown = (e) => {
     if (e.ctrlKey && e.key === "Enter") {
       saveSnippet(edit_card, id);

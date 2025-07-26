@@ -3,8 +3,8 @@ import { invoke } from '@tauri-apps/api/core';
 import Fuse from "fuse.js";
 
 const first_element = document.getElementById('leftnav');
-const picker_button = document.getElementById('toggle-picker');
 
+console.log("Hello?");
 const picker = document.createElement('div');
 picker.id = "document-picker";
 picker.className = "overlay-document-picker";
@@ -21,17 +21,26 @@ picker.appendChild(input);
 picker.appendChild(document_list);
 
 document.body.insertBefore(picker, first_element);
+document.body.insertBefore(context, first_element);
 
 let results = [];
 let fuse;
 
 const toggle_picker = async () => {
-  const document_picker = document.getElementById("document-picker");
-  if (document_picker.style.display === "block") {
-    document_picker.style.display = "none";
+  if (picker.style.display === "block") {
+    picker.style.display = "none";
   } else {
-    document_picker.style.display = "block";
+    picker.style.display = "block";
     input.focus();
+  }
+}
+
+const toggle_overlay = async () => {
+  const context = document.getElementById("snippet-context");
+  if (context.style.display === "block") {
+    context.style.display = "none";
+  } else {
+    context.style.display = "block";
   }
 }
 
@@ -171,8 +180,15 @@ const editSnippet = (view_card) => {
 
   view_card.replaceWith(edit_card);
   edit_card.focus();
+  console.log("Firing toggle function");
+  toggle_overlay();
 
-  edit_card.onblur = () => saveSnippet(edit_card, view_card.id);
+  edit_card.onblur = () => {
+    saveSnippet(edit_card, view_card.id);
+    toggle_overlay();
+  }
+
+  document.getElementById("update_snippet").onclick = () => saveSnippet(edit_card, id);
   edit_card.onkeydown = (e) => {
     if (e.ctrlKey && e.key === "Enter") {
       saveSnippet(edit_card, id);
@@ -192,4 +208,9 @@ const saveSnippet = (edit_card, id) => {
   invoke('update', { snippetId: parseInt(id), snippet: edit_card.value, documentName: snippet.document_name });
   view_card.onclick = () => editSnippet(view_card);
   edit_card.replaceWith(view_card);
+}
+
+const deleteSnippet = (id) => {
+  const snippet = snippets.pop(i => i.snippet_id === parseInt(id));
+  invoke('remove_snippet', { snippetId: parseInt(id) });
 }
