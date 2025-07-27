@@ -21,7 +21,6 @@ picker.appendChild(input);
 picker.appendChild(document_list);
 
 document.body.insertBefore(picker, first_element);
-document.body.insertBefore(context, first_element);
 
 let results = [];
 let fuse;
@@ -177,26 +176,34 @@ const editSnippet = (view_card) => {
   const snippet = snippets.find(i => i.snippet_id === parseInt(id));
   edit_card.id = id;
   edit_card.value = snippet.raw;
+  edit_card.oninput = () => {
+    edit_card.style.height = "";
+    edit_card.style.height = edit_card.scrollHeight + "px";
+  }
 
   view_card.replaceWith(edit_card);
   edit_card.focus();
-  console.log("Firing toggle function");
   toggle_overlay();
 
-  edit_card.onblur = () => {
-    saveSnippet(edit_card, view_card.id);
-    toggle_overlay();
-  }
-
+  //  edit_card.onblur = () => {
+  //    saveSnippet(edit_card, view_card.id);
+  //    toggle_overlay();
+  //  }
+  //
   document.getElementById("update_snippet").onclick = () => saveSnippet(edit_card, id);
+  document.getElementById("delete_snippet").onclick = () => deleteSnippet(edit_card, id);
+  document.getElementById("move_snippet").onclick = () => moveSnippet(edit_card, id);
+
   edit_card.onkeydown = (e) => {
     if (e.ctrlKey && e.key === "Enter") {
       saveSnippet(edit_card, id);
+      toggle_overlay();
     }
   }
 }
 
 const saveSnippet = (edit_card, id) => {
+  console.log("Updating snippet");
   const content = marked.parse(edit_card.value);
   const snippet = snippets.find(i => i.snippet_id === parseInt(id));
   snippet.raw = edit_card.value;
@@ -210,7 +217,32 @@ const saveSnippet = (edit_card, id) => {
   edit_card.replaceWith(view_card);
 }
 
-const deleteSnippet = (id) => {
-  const snippet = snippets.pop(i => i.snippet_id === parseInt(id));
-  invoke('remove_snippet', { snippetId: parseInt(id) });
+const deleteSnippet = (edit_card, id) => {
+  console.log("Deleting snippet");
+  snippets.pop(i => i.snippet_id === parseInt(id));
+  invoke('delete_snippet', { snippetId: parseInt(id) });
 }
+
+const moveSnippet = (edit_card, id) => {
+  console.log("Moving snippet");
+  toggle_picker();
+  input.onkeydown = (e, id) => move_document_bind(e, id);
+}
+
+const move_document_bind = (e) => {
+  if (e.key === "Enter") {
+    let document_name = "None";
+    if (results.length > 0 && Array.isArray(results)) {
+      console.log("Results found");
+      snippets.pop(i => i.snippet_id === parseInt(id));
+      document_name = results[0].item;
+    } else {
+      console.log("No results found");
+    }
+    toggle_picker();
+
+    invoke('move_snippet', { snippetId: parseInt(id), documentName: document_name });
+    input.value = "";
+  }
+}
+

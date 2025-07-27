@@ -4,6 +4,16 @@ import { marked } from 'marked';
 export let snippets = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
+  const marked_document = await invoke('fetch_marked_document')
+    .catch((error) => console.log("Error caught:" + error));
+
+  document.getElementById('marked_document').innerText = marked_document.document_name;
+
+  if (marked_document.document_name === "None") {
+    document.getElementById('rightnav').hidden = true;
+  } else {
+    document.getElementById('rightnav').hidden = false;
+  }
   renderView(localStorage['current_document']);
 });
 
@@ -24,10 +34,8 @@ const renderView = async (search_document) => {
     );
   }
 
-  document.getElementById('marked_document').innerText = document_name;
-
   const document_title = document.createElement('h1');
-  document_title.innerText = viewed_document.document_name;
+  document_title.innerText = document_name;
 
   if (document_name === "None") {
     document.getElementById('rightnav').hidden = true;
@@ -78,19 +86,25 @@ const editSnippet = (view_card) => {
   edit_card.focus();
   toggle_overlay();
 
-  edit_card.onblur = () => {
-    saveSnippet(edit_card, view_card.id);
-    toggle_overlay();
-  }
+  //  edit_card.onblur = () => {
+  //    saveSnippet(edit_card, view_card.id);
+  //    toggle_overlay();
+  //  }
+  //
+  document.getElementById("update_snippet").onclick = () => saveSnippet(edit_card, id);
+  document.getElementById("delete_snippet").onclick = () => deleteSnippet(edit_card, id);
+  document.getElementById("move_snippet").onclick = () => moveSnippet(edit_card, id);
 
   edit_card.onkeydown = (e) => {
     if (e.ctrlKey && e.key === "Enter") {
       saveSnippet(edit_card, id);
+      toggle_overlay();
     }
   }
 }
 
 const saveSnippet = (edit_card, id) => {
+  console.log("Updating snippet");
   const content = marked.parse(edit_card.value);
   const snippet = snippets.find(i => i.snippet_id === parseInt(id));
   snippet.raw = edit_card.value;
@@ -109,3 +123,35 @@ window.onkeydown = function(e) {
     window.location.href = "../index.html";
   }
 }
+
+const deleteSnippet = (edit_card, id) => {
+  console.log("Deleting snippet");
+  snippets.pop(i => i.snippet_id === parseInt(id));
+  invoke('delete_snippet', { snippetId: parseInt(id) });
+  edit_card.remove();
+  toggle_overlay();
+}
+
+const moveSnippet = (edit_card, id) => {
+  console.log("Moving snippet");
+  toggle_picker();
+  input.onkeydown = (e, id) => move_document_bind(e, id);
+}
+
+const move_document_bind = (e) => {
+  if (e.key === "Enter") {
+    let document_name = "None";
+    if (results.length > 0 && Array.isArray(results)) {
+      console.log("Results found");
+      snippets.pop(i => i.snippet_id === parseInt(id));
+      document_name = results[0].item;
+    } else {
+      console.log("No results found");
+    }
+    toggle_picker();
+
+    invoke('move_snippet', { snippetId: parseInt(id), documentName: document_name });
+    input.value = "";
+  }
+}
+

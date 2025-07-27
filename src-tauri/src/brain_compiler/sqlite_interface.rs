@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::{Ok, Result};
 use sqlx::{FromRow, SqlitePool};
 
-use crate::brain_compiler::{MarkedDocument, SnippetEntry};
+use crate::brain_compiler::{sqlite_interface, MarkedDocument, SnippetEntry};
 
 use super::{Corpus, CorpusSnippets, PageDocument};
 
@@ -234,6 +234,18 @@ pub async fn fetch_document(
 }
 
 pub async fn delete_snippet(db: &SqlitePool, snippet_id: i32) -> Result<()> {
+    let document_name = sqlx::query_as::<_, Snippet>(
+        r#"
+    SELECT snippet, Document.document_name FROM Snippet
+    JOIN Document ON Snippet.document_id == Document.document_id
+    WHERE snippet_id = $1;
+  "#,
+    )
+    .bind(snippet_id)
+    .fetch_one(db)
+    .await?
+    .document_name;
+
     sqlx::query("DELETE FROM TFIDF_Term WHERE snippet_id = $1")
         .bind(snippet_id)
         .execute(db)
@@ -246,6 +258,25 @@ pub async fn delete_snippet(db: &SqlitePool, snippet_id: i32) -> Result<()> {
         .bind(snippet_id)
         .execute(db)
         .await?;
+
+    let is_empty = sqlx::query_as::<_, Snippet>(
+        r#"
+    SELECT snippet, Document.document_name FROM Snippet
+    JOIN Document ON Snippet.document_id == Document.document_id
+    WHERE document_name = $1;
+  "#,
+    )
+    .bind(&document_name)
+    .fetch_all(db)
+    .await?
+    .is_empty();
+
+    if is_empty {
+        sqlx::query("DELETE FROM Document WHERE document_name = $1;")
+            .bind(&document_name)
+            .execute(db)
+            .await?;
+    }
 
     Ok(())
 }
