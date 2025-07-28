@@ -4,7 +4,6 @@ import Fuse from "fuse.js";
 
 const first_element = document.getElementById('leftnav');
 
-console.log("Hello?");
 const picker = document.createElement('div');
 picker.id = "document-picker";
 picker.className = "overlay-document-picker";
@@ -25,7 +24,7 @@ document.body.insertBefore(picker, first_element);
 let results = [];
 let fuse;
 
-const toggle_picker = async () => {
+export const toggle_picker = async () => {
   if (picker.style.display === "block") {
     picker.style.display = "none";
   } else {
@@ -70,7 +69,6 @@ document.oninput = function(e) {
 
 document.onkeydown = function(e) {
   if (e.ctrlKey && e.key === "e") {
-    console.log("Loading picker for marked docs");
     toggle_picker();
     input.onkeydown = (e) => mark_document_bind(e);
   }
@@ -122,21 +120,31 @@ const mark_document_bind = (e) => {
     }
 
     toggle_picker();
-    invoke("mark_document", { documentName: document_name }).then(() => {
-      if (document.body.id === "view") {
-        //  const marked_document = await invoke('fetch_marked_document')
-        //    .catch((error) => console.log("Error caught:" + error));
-        //  console.log(marked_document);
-      }
-    });
+    invoke("mark_document", { documentName: document_name });
     document.getElementById("marked_document").innerText = document_name;
     input.value = "";
   }
 }
 
-const snippets = [];
+let snippets = [];
 const update_view = async (search_document) => {
-  let snippet_container = document.getElementById('snippet');
+  const marked_document = await invoke('fetch_marked_document')
+    .catch((error) => console.log("Error caught:" + error));
+
+  if (marked_document === null) {
+    document.getElementById('marked_document').innerText = "None";
+  } else {
+    document.getElementById('marked_document').innerText = marked_document.document_name;
+  }
+  //
+  //  if (document.getElementById('marked_document').innerText === "None") {
+  //    document.getElementById('rightnav').hidden = true;
+  //  } else {
+  //    document.getElementById('rightnav').hidden = false;
+  //  }
+
+  snippets = [];
+  const snippet_container = document.getElementById('snippet');
   snippet_container.innerHTML = "";
 
   const viewed_document = await invoke('load_document', { documentName: search_document })
@@ -155,10 +163,7 @@ const update_view = async (search_document) => {
     );
   }
 
-  const document_title = document.createElement('h1');
-  document_title.innerText = document_name;
-
-  snippet_container.appendChild(document_title);
+  document.getElementById("document_name").innerText = document_name;
 
   for (const snippet of snippets.entries()) {
     const view_card = document.createElement('div');
@@ -185,11 +190,6 @@ const editSnippet = (view_card) => {
   edit_card.focus();
   toggle_overlay();
 
-  //  edit_card.onblur = () => {
-  //    saveSnippet(edit_card, view_card.id);
-  //    toggle_overlay();
-  //  }
-  //
   document.getElementById("update_snippet").onclick = () => saveSnippet(edit_card, id);
   document.getElementById("delete_snippet").onclick = () => deleteSnippet(edit_card, id);
   document.getElementById("move_snippet").onclick = () => moveSnippet(edit_card, id);
@@ -218,31 +218,32 @@ const saveSnippet = (edit_card, id) => {
 }
 
 const deleteSnippet = (edit_card, id) => {
-  console.log("Deleting snippet");
   snippets.pop(i => i.snippet_id === parseInt(id));
   invoke('delete_snippet', { snippetId: parseInt(id) });
+  edit_card.remove();
+  toggle_overlay();
 }
 
 const moveSnippet = (edit_card, id) => {
-  console.log("Moving snippet");
   toggle_picker();
-  input.onkeydown = (e, id) => move_document_bind(e, id);
+  input.onkeydown = (e) => move_document_bind(e, id, edit_card);
 }
 
-const move_document_bind = (e) => {
+export const move_document_bind = (e, id, edit_card) => {
   if (e.key === "Enter") {
     let document_name = "None";
     if (results.length > 0 && Array.isArray(results)) {
       console.log("Results found");
       snippets.pop(i => i.snippet_id === parseInt(id));
       document_name = results[0].item;
+      invoke('move_snippet', { snippetId: parseInt(id), documentName: document_name });
     } else {
       console.log("No results found");
     }
+    edit_card.remove();
     toggle_picker();
+    toggle_overlay();
 
-    invoke('move_snippet', { snippetId: parseInt(id), documentName: document_name });
-    input.value = "";
+    document.getElementById("document_input").value = "";
   }
 }
-

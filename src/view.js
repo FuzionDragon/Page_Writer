@@ -1,23 +1,29 @@
 import { invoke } from '@tauri-apps/api/core';
 import { marked } from 'marked';
+import { move_document_bind, toggle_picker } from './search';
 
-export let snippets = [];
-
+let snippets = [];
 document.addEventListener('DOMContentLoaded', async () => {
   const marked_document = await invoke('fetch_marked_document')
     .catch((error) => console.log("Error caught:" + error));
 
-  document.getElementById('marked_document').innerText = marked_document.document_name;
-
-  if (marked_document.document_name === "None") {
-    document.getElementById('rightnav').hidden = true;
+  if (marked_document === null) {
+    document.getElementById('marked_document').innerText = "None";
   } else {
-    document.getElementById('rightnav').hidden = false;
+    document.getElementById('marked_document').innerText = marked_document.document_name;
   }
+
+  //  if (document.getElementById('marked_document').innerText === "None") {
+  //    document.getElementById('rightnav').hidden = true;
+  //  } else {
+  //    document.getElementById('rightnav').hidden = false;
+  //  }
+
   renderView(localStorage['current_document']);
 });
 
 const renderView = async (search_document) => {
+  snippets = [];
   const viewed_document = await invoke('load_document', { documentName: search_document })
     .catch((error) => console.log("Error caught:" + error));
   let document_name = "None";
@@ -34,14 +40,8 @@ const renderView = async (search_document) => {
     );
   }
 
-  const document_title = document.createElement('h1');
-  document_title.innerText = document_name;
-
-  if (document_name === "None") {
-    document.getElementById('rightnav').hidden = true;
-  } else {
-    document.getElementById('rightnav').hidden = false;
-  }
+  //  const document_title = document.createElement('h1');
+  document.getElementById("document_name").innerText = document_name;
 
   if (localStorage['current_document'] === null) {
     localStorage['current_document'] = "None";
@@ -49,8 +49,7 @@ const renderView = async (search_document) => {
 
   document.getElementById('current_document').innerText = localStorage['current_document'];
 
-  let snippet_container = document.getElementById('snippet');
-  snippet_container.appendChild(document_title);
+  const snippet_container = document.getElementById('snippet');
 
   for (const snippet of snippets.entries()) {
     const view_card = document.createElement('div');
@@ -86,11 +85,6 @@ const editSnippet = (view_card) => {
   edit_card.focus();
   toggle_overlay();
 
-  //  edit_card.onblur = () => {
-  //    saveSnippet(edit_card, view_card.id);
-  //    toggle_overlay();
-  //  }
-  //
   document.getElementById("update_snippet").onclick = () => saveSnippet(edit_card, id);
   document.getElementById("delete_snippet").onclick = () => deleteSnippet(edit_card, id);
   document.getElementById("move_snippet").onclick = () => moveSnippet(edit_card, id);
@@ -125,7 +119,6 @@ window.onkeydown = function(e) {
 }
 
 const deleteSnippet = (edit_card, id) => {
-  console.log("Deleting snippet");
   snippets.pop(i => i.snippet_id === parseInt(id));
   invoke('delete_snippet', { snippetId: parseInt(id) });
   edit_card.remove();
@@ -133,25 +126,6 @@ const deleteSnippet = (edit_card, id) => {
 }
 
 const moveSnippet = (edit_card, id) => {
-  console.log("Moving snippet");
   toggle_picker();
-  input.onkeydown = (e, id) => move_document_bind(e, id);
+  document.getElementById("document_input").onkeydown = (e) => move_document_bind(e, id, edit_card);
 }
-
-const move_document_bind = (e) => {
-  if (e.key === "Enter") {
-    let document_name = "None";
-    if (results.length > 0 && Array.isArray(results)) {
-      console.log("Results found");
-      snippets.pop(i => i.snippet_id === parseInt(id));
-      document_name = results[0].item;
-    } else {
-      console.log("No results found");
-    }
-    toggle_picker();
-
-    invoke('move_snippet', { snippetId: parseInt(id), documentName: document_name });
-    input.value = "";
-  }
-}
-
