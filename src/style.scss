@@ -135,6 +135,18 @@ textarea {
   right: 0;
 }
 
+#bottomleftnav {
+  @include nav;
+  left: 0;
+  bottom: 0;
+}
+
+#bottomrightnav {
+  @include nav;
+  right: 0;
+  bottom: 0;
+}
+
 #title-input {
   font-size: 1.6em;
 }
@@ -199,38 +211,4 @@ textarea {
   bottom: 0;
   align-content: center;
   padding: 0.5em;
-}
-
-.navbar {
-  display: flex;
-  justify-content: space-between; // Pushes left/right items to edges
-  align-items: center;
-  padding: 0.5rem 1rem;
-  position: relative; // Needed for absolute positioning (alternative)
-
-  // Left item (e.g., back button)
-  &__left {
-    flex: 0 0 auto; // Prevents growing/shrinking
-    margin-right: auto; // Pushes everything else right
-  }
-
-  // Right item (marked doc)
-  &__marked {
-    flex: 0 0 auto;
-    margin-left: auto; // Pushes itself to the right
-    color: #777;
-    &:empty { display: none; }
-  }
-
-  // Current doc (truly centered)
-  &__current {
-    position: absolute; // Takes it out of flex flow
-    left: 50%;        // Centers horizontally
-    transform: translateX(-50%);
-    font-weight: bold;
-    max-width: 60%;   // Prevents overflow
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
 }

@@ -14,12 +14,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   } else {
     document.getElementById('rightnav').hidden = false;
   }
-
-  if (localStorage['current_document'] === null) {
-    localStorage['current_document'] = "None";
-  }
-
-  document.getElementById('current_document').innerText = localStorage['current_document'];
 })
 
 const submit = function() {

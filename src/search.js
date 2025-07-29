@@ -43,6 +43,12 @@ const toggle_overlay = async () => {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById("delete_document").onclick = () => deleteDocument();
+
+  if (document.body.id === "view") {
+    document.getElementById("delete_current_document").onclick = () => deleteCurrentDocument();
+  }
+
   const corpus = await invoke('load_snippets')
     .catch((error) => console.log("error caught:" + error));
 
@@ -136,12 +142,6 @@ const update_view = async (search_document) => {
   } else {
     document.getElementById('marked_document').innerText = marked_document.document_name;
   }
-  //
-  //  if (document.getElementById('marked_document').innerText === "None") {
-  //    document.getElementById('rightnav').hidden = true;
-  //  } else {
-  //    document.getElementById('rightnav').hidden = false;
-  //  }
 
   snippets = [];
   const snippet_container = document.getElementById('snippet');
@@ -246,4 +246,52 @@ export const move_document_bind = (e, id, edit_card) => {
 
     document.getElementById("document_input").value = "";
   }
+}
+
+const deleteDocument = () => {
+  console.log("deleting document");
+  toggle_picker();
+  input.onkeydown = (e) => delete_document_bind(e);
+}
+
+const delete_document_bind = (e) => {
+  if (e.key === "Enter") {
+    let document_name = "None";
+    if (results.length > 0 && Array.isArray(results)) {
+      console.log("Results found");
+      document_name = results[0].item;
+      invoke("delete_document", { documentName: document_name });
+      if (document.body.id === "view" && localStorage['current_document'] === document_name) {
+        document.getElementById("snippet").innerHTML = "";
+        document.getElementById("document_name").innerText = "None";
+        document.getElementById("current_document").innerText = "None";
+        localStorage['current_document'] = "None";
+      }
+      results.pop(i => i.item === document_name);
+    } else {
+      console.log("No results found");
+    }
+    toggle_picker();
+
+    document.getElementById("document_input").value = "";
+  }
+}
+
+const deleteCurrentDocument = () => {
+  let document_name = localStorage['current_document'];
+  if (document_name !== "None") {
+    console.log("Results found");
+    invoke("delete_document", { documentName: document_name });
+    if (document.body.id === "view") {
+      document.getElementById("snippet").innerHTML = "";
+      document.getElementById("document_name").innerText = "None";
+      document.getElementById("current_document").innerText = "None";
+    }
+    results.pop(i => i.item === document_name);
+    localStorage['current_document'] = "None";
+  } else {
+    console.log("No results found");
+  }
+
+  document.getElementById("document_input").value = "";
 }
