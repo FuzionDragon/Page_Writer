@@ -20,7 +20,8 @@ pub struct PageDocument {
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct MarkedDocument {
+pub struct DocumentSnippets {
+    document_id: i32,
     document_name: String,
     snippets: Vec<SnippetEntry>,
 }
@@ -39,10 +40,11 @@ pub async fn submit_snippet(
     snippet: &str,
     title: Option<&str>,
     db: &SqlitePool,
-) -> Result<(), anyhow::Error> {
+) -> Result<Option<i32>, anyhow::Error> {
     if snippet.is_empty() {
         println!("Snippet is empty");
-        return Ok(());
+
+        return Ok(None);
     };
 
     let stop_words = get(LANGUAGE::English);
@@ -54,7 +56,7 @@ pub async fn submit_snippet(
     let corpus_rake_data = sqlite_interface::load_rake_data(db).await?;
 
     if let Some(title) = title {
-        sqlite_interface::add_document(
+        let document_id = sqlite_interface::add_document(
             db,
             title.trim(),
             snippet,
@@ -62,23 +64,25 @@ pub async fn submit_snippet(
             input_rake_data.clone(),
         )
         .await?;
-        sqlite_interface::set_latest_document(db, title.trim()).await?;
+        sqlite_interface::set_latest_document(db, document_id).await?;
+
+        Ok(Some(document_id))
     } else {
         let first_line = snippet.lines().collect::<Vec<&str>>()[0];
         let marked_document = sqlite_interface::fetch_marked_document(db).await?;
         let latest_document = sqlite_interface::fetch_latest_document(db).await?;
 
         if let Some(marked_document) = marked_document {
-            sqlite_interface::add_snippet(db, snippet, &marked_document.document_name).await?;
-            sqlite_interface::update_tfidf_data(
+            let document_id = sqlite_interface::add_document(
                 db,
-                input_tfidf_data,
                 &marked_document.document_name,
+                snippet,
+                input_tfidf_data.clone(),
+                input_rake_data.clone(),
             )
             .await?;
-            sqlite_interface::update_rake_data(db, input_rake_data, &marked_document.document_name)
-                .await?;
-            return Ok(());
+
+            return Ok(Some(document_id));
         }
 
         let scores = combined_similarity_scores(
@@ -92,18 +96,17 @@ pub async fn submit_snippet(
         );
 
         if scores.is_empty() {
-            sqlite_interface::add_document(
+            let document_id = sqlite_interface::add_document(
                 db,
-                first_line,
+                first_line.trim(),
                 snippet,
                 input_tfidf_data.clone(),
                 input_rake_data.clone(),
             )
             .await?;
-            sqlite_interface::update_tfidf_data(db, input_tfidf_data, first_line.trim()).await?;
-            sqlite_interface::update_rake_data(db, input_rake_data, first_line.trim()).await?;
-            sqlite_interface::set_latest_document(db, first_line).await?;
-            return Ok(());
+            sqlite_interface::set_latest_document(db, document_id).await?;
+
+            return Ok(Some(document_id));
         }
 
         if scores[0].1 >= THESHOLD {
@@ -112,17 +115,24 @@ pub async fn submit_snippet(
                 scores[0].0, scores[0].1
             );
 
-            sqlite_interface::add_snippet(db, snippet, &scores[0].0).await?;
-            sqlite_interface::update_tfidf_data(db, input_tfidf_data, &scores[0].0).await?;
-            sqlite_interface::update_rake_data(db, input_rake_data, &scores[0].0).await?;
-            sqlite_interface::set_latest_document(db, &scores[0].0).await?;
+            let document_id = sqlite_interface::add_document(
+                db,
+                &scores[0].0,
+                snippet,
+                input_tfidf_data.clone(),
+                input_rake_data.clone(),
+            )
+            .await?;
+            sqlite_interface::set_latest_document(db, document_id).await?;
+
+            Ok(Some(document_id))
         } else {
             println!(
                 "{} doesn't meet the threshold with a score of {}",
                 scores[0].0, scores[0].1
             );
             println!("Creating new document");
-            sqlite_interface::add_document(
+            let document_id = sqlite_interface::add_document(
                 db,
                 first_line.trim(),
                 snippet,
@@ -130,11 +140,11 @@ pub async fn submit_snippet(
                 input_rake_data,
             )
             .await?;
-            sqlite_interface::set_latest_document(db, first_line.trim()).await?;
+            sqlite_interface::set_latest_document(db, document_id).await?;
+
+            Ok(Some(document_id))
         }
     }
-
-    Ok(())
 }
 
 pub async fn update_snippet(

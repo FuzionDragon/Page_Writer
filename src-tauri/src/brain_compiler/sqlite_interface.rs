@@ -3,28 +3,16 @@ use std::collections::HashMap;
 use anyhow::{Ok, Result};
 use sqlx::{FromRow, SqlitePool};
 
-use crate::brain_compiler::{sqlite_interface, MarkedDocument, SnippetEntry};
+use crate::brain_compiler::{DocumentSnippets, SnippetEntry};
 
 use super::{Corpus, CorpusSnippets, PageDocument};
 
 #[derive(Debug, FromRow, Clone)]
 pub struct Snippet {
-    snippet: String,
-    document_name: String,
-}
-
-#[derive(Debug, FromRow, Clone)]
-pub struct MarkedSnippet {
-    snippet_id: i32,
-    snippet: String,
-    document_name: String,
-}
-
-#[derive(Debug, FromRow, Clone)]
-pub struct SnippetRow {
     snippet_id: i32,
     snippet: String,
     document_id: i32,
+    document_name: String,
 }
 
 #[derive(Debug, FromRow, Clone)]
@@ -40,7 +28,7 @@ pub struct Term {
 }
 
 #[derive(Debug, FromRow, Clone)]
-struct DocumentRow {
+struct Document {
     document_id: i32,
     document_name: String,
 }
@@ -108,7 +96,7 @@ pub async fn init(db: &SqlitePool) -> Result<()> {
 pub async fn load_corpus_snippets(db: &SqlitePool) -> Result<CorpusSnippets> {
     let snippets = sqlx::query_as::<_, Snippet>(
         r#"
-    SELECT snippet, Document.document_name FROM Snippet
+    SELECT snippet_id, snippet, Document.document_id, Document.document_name FROM Snippet
     JOIN Document ON Snippet.document_id == Document.document_id;
   "#,
     )
@@ -185,15 +173,15 @@ pub async fn load_rake_data(db: &SqlitePool) -> Result<CorpusSnippets> {
     Ok(corpus_phrases)
 }
 
-pub async fn load_snippets(db: &SqlitePool, document_name: &str) -> Result<Vec<Snippet>> {
+pub async fn load_snippets(db: &SqlitePool, document_id: i32) -> Result<Vec<Snippet>> {
     let snippets = sqlx::query_as::<_, Snippet>(
         r#"
-        SELECT snippet, Document.document_name FROM Snippet
-    JOIN Document ON Snippet.document_id == Document.document_id
-    WHERE document_name = $1;
-  "#,
+        SELECT snippet_id, snippet, Document.document_id, Document.document_name FROM Snippet
+        JOIN Document ON Snippet.document_id == Document.document_id
+        WHERE Document.document_id = $1;
+      "#,
     )
-    .bind(document_name)
+    .bind(document_id)
     .fetch_all(db)
     .await?;
 
@@ -203,10 +191,10 @@ pub async fn load_snippets(db: &SqlitePool, document_name: &str) -> Result<Vec<S
 pub async fn fetch_document(
     db: &SqlitePool,
     document_name: &str,
-) -> Result<Option<MarkedDocument>> {
-    let snippets = sqlx::query_as::<_, MarkedSnippet>(
+) -> Result<Option<DocumentSnippets>> {
+    let snippets = sqlx::query_as::<_, Snippet>(
         r#"
-        SELECT snippet_id, snippet, Document.document_name FROM Snippet
+        SELECT snippet_id, snippet, Document.document_id, Document.document_name FROM Snippet
         JOIN Document ON Snippet.document_id == Document.document_id
         WHERE Document.document_name = $1;
       "#,
@@ -225,7 +213,8 @@ pub async fn fetch_document(
                 snippet: v.snippet.clone(),
             })
             .collect();
-        let page_document = MarkedDocument {
+        let page_document = DocumentSnippets {
+            document_id: snippets[0].document_id,
             document_name: snippets[0].document_name.clone(),
             snippets: all_snippets,
         };
@@ -234,9 +223,9 @@ pub async fn fetch_document(
 }
 
 pub async fn delete_snippet(db: &SqlitePool, snippet_id: i32) -> Result<()> {
-    let document_name = sqlx::query_as::<_, Snippet>(
+    let document_id = sqlx::query_as::<_, Snippet>(
         r#"
-    SELECT snippet, Document.document_name FROM Snippet
+    SELECT snippet_id, snippet, Document.document_id, Document.document_name FROM Snippet
     JOIN Document ON Snippet.document_id == Document.document_id
     WHERE snippet_id = $1;
   "#,
@@ -244,7 +233,7 @@ pub async fn delete_snippet(db: &SqlitePool, snippet_id: i32) -> Result<()> {
     .bind(snippet_id)
     .fetch_one(db)
     .await?
-    .document_name;
+    .document_id;
 
     sqlx::query("DELETE FROM TFIDF_Term WHERE snippet_id = $1")
         .bind(snippet_id)
@@ -261,19 +250,19 @@ pub async fn delete_snippet(db: &SqlitePool, snippet_id: i32) -> Result<()> {
 
     let is_empty = sqlx::query_as::<_, Snippet>(
         r#"
-    SELECT snippet, Document.document_name FROM Snippet
-    JOIN Document ON Snippet.document_id == Document.document_id
-    WHERE document_name = $1;
-  "#,
+        SELECT snippet_id, snippet, Document.document_id, Document.document_name FROM Snippet
+        JOIN Document ON Snippet.document_id == Document.document_id
+        WHERE Document.document_id = $1;
+      "#,
     )
-    .bind(&document_name)
+    .bind(document_id)
     .fetch_all(db)
     .await?
     .is_empty();
 
     if is_empty {
-        sqlx::query("DELETE FROM Document WHERE document_name = $1;")
-            .bind(&document_name)
+        sqlx::query("DELETE FROM Document WHERE document_id = $1;")
+            .bind(document_id)
             .execute(db)
             .await?;
     }
@@ -281,19 +270,17 @@ pub async fn delete_snippet(db: &SqlitePool, snippet_id: i32) -> Result<()> {
     Ok(())
 }
 
-pub async fn delete_document(db: &SqlitePool, document_name: &str) -> Result<()> {
-    let document_id = sqlx::query_as::<_, DocumentRow>(
-        "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
+pub async fn delete_document(db: &SqlitePool, document_id: i32) -> Result<()> {
+    let snippets = sqlx::query_as::<_, Snippet>(
+        r#"
+        SELECT snippet_id, snippet, Document.document_id, Document.document_name FROM Snippet
+        JOIN Document ON Snippet.document_id == Document.document_id
+        WHERE Document.document_id = $1;
+      "#,
     )
-    .bind(document_name)
-    .fetch_one(db)
-    .await?
-    .document_id;
-
-    let snippets = sqlx::query_as::<_, SnippetRow>("SELECT * FROM Snippet WHERE document_id = $1;")
-        .bind(document_id)
-        .fetch_all(db)
-        .await?;
+    .bind(document_id)
+    .fetch_all(db)
+    .await?;
 
     for snippet in snippets {
         delete_snippet(db, snippet.snippet_id).await?;
@@ -327,7 +314,7 @@ pub async fn update_snippet(
 
     let snippet = sqlx::query_as::<_, Snippet>(
         r#"
-        SELECT snippet, Document.document_name FROM Snippet
+        SELECT snippet_id, snippet, Document.document_id, Document.document_name FROM Snippet
         JOIN Document ON Snippet.document_id == Document.document_id
         WHERE snippet_id = $1;
       "#,
@@ -336,30 +323,32 @@ pub async fn update_snippet(
     .fetch_one(db)
     .await?;
 
-    update_tfidf_data(db, terms, &snippet.document_name).await?;
-    update_rake_data(db, phrases, &snippet.document_name).await?;
+    update_tfidf_data(db, terms, snippet.document_id).await?;
+    update_rake_data(db, phrases, snippet.document_id).await?;
 
     Ok(())
 }
 
-pub async fn update_tfidf_data(db: &SqlitePool, terms: Vec<String>, document: &str) -> Result<()> {
-    let document_row = sqlx::query_as::<_, DocumentRow>(
-        "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
+pub async fn update_tfidf_data(
+    db: &SqlitePool,
+    terms: Vec<String>,
+    document_id: i32,
+) -> Result<()> {
+    let snippet = sqlx::query_as::<_, Snippet>(
+        r#"
+        SELECT snippet_id, snippet, Document.document_id, Document.document_name FROM Snippet
+        JOIN Document ON Snippet.document_id == Document.document_id
+        WHERE Document.document_id = $1;
+      "#,
     )
-    .bind(document)
+    .bind(document_id)
     .fetch_one(db)
     .await?;
-
-    let snippet_row =
-        sqlx::query_as::<_, SnippetRow>("SELECT * FROM Snippet WHERE document_id = $1;")
-            .bind(document_row.document_id)
-            .fetch_one(db)
-            .await?;
 
     for term in terms {
         sqlx::query("INSERT OR IGNORE INTO TFIDF_Term (term, snippet_id) VALUES ($1, $2) ON CONFLICT(term, snippet_id) DO NOTHING;")
       .bind(term)
-      .bind(snippet_row.snippet_id)
+      .bind(snippet.snippet_id)
       .execute(db)
       .await?;
     }
@@ -367,24 +356,26 @@ pub async fn update_tfidf_data(db: &SqlitePool, terms: Vec<String>, document: &s
     Ok(())
 }
 
-pub async fn update_rake_data(db: &SqlitePool, phrases: Vec<String>, document: &str) -> Result<()> {
-    let document_row = sqlx::query_as::<_, DocumentRow>(
-        "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
+pub async fn update_rake_data(
+    db: &SqlitePool,
+    phrases: Vec<String>,
+    document_id: i32,
+) -> Result<()> {
+    let snippet = sqlx::query_as::<_, Snippet>(
+        r#"
+        SELECT snippet_id, snippet, Document.document_id, Document.document_name FROM Snippet
+        JOIN Document ON Snippet.document_id == Document.document_id
+        WHERE Document.document_id = $1;
+      "#,
     )
-    .bind(document)
+    .bind(document_id)
     .fetch_one(db)
     .await?;
-
-    let snippet_row =
-        sqlx::query_as::<_, SnippetRow>("SELECT * FROM Snippet WHERE document_id = $1;")
-            .bind(document_row.document_id)
-            .fetch_one(db)
-            .await?;
 
     for phrase in phrases {
         sqlx::query("INSERT OR IGNORE INTO RAKE_Phrase (phrase, snippet_id) VALUES ($1, $2) ON CONFLICT(phrase, snippet_id) DO NOTHING;")
       .bind(phrase)
-      .bind(snippet_row.snippet_id)
+      .bind(snippet.snippet_id)
       .execute(db)
       .await?;
     }
@@ -392,16 +383,9 @@ pub async fn update_rake_data(db: &SqlitePool, phrases: Vec<String>, document: &
     Ok(())
 }
 
-pub async fn move_snippet(db: &SqlitePool, snippet_id: i32, document_name: &str) -> Result<()> {
-    let document_row = sqlx::query_as::<_, DocumentRow>(
-        "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
-    )
-    .bind(document_name)
-    .fetch_one(db)
-    .await?;
-
+pub async fn move_snippet(db: &SqlitePool, snippet_id: i32, document_id: i32) -> Result<()> {
     sqlx::query("UPDATE Snippet SET document_id = $1 WHERE snippet_id = $2;")
-        .bind(document_row.document_id)
+        .bind(document_id)
         .bind(snippet_id)
         .execute(db)
         .await?;
@@ -409,23 +393,21 @@ pub async fn move_snippet(db: &SqlitePool, snippet_id: i32, document_name: &str)
     Ok(())
 }
 
-pub async fn set_marked_document(db: &SqlitePool, document: &str) -> Result<()> {
+pub async fn set_marked_document(db: &SqlitePool, document_id: i32) -> Result<()> {
     sqlx::query("UPDATE Document SET is_marked = NULL WHERE is_marked = 1;")
         .execute(db)
         .await?;
 
-    if document != "NONE" {
-        sqlx::query("UPDATE Document SET is_marked = 1 WHERE document_name = $1;")
-            .bind(document)
-            .execute(db)
-            .await?;
-    }
+    sqlx::query("UPDATE Document SET is_marked = 1 WHERE document_id = $1;")
+        .bind(document_id)
+        .execute(db)
+        .await?;
 
     Ok(())
 }
 
-pub async fn fetch_marked_document(db: &SqlitePool) -> Result<Option<MarkedDocument>> {
-    let snippets = sqlx::query_as::<_, MarkedSnippet>(
+pub async fn fetch_marked_document(db: &SqlitePool) -> Result<Option<DocumentSnippets>> {
+    let snippets = sqlx::query_as::<_, Snippet>(
         r#"
         SELECT snippet_id, snippet, Document.document_name FROM Snippet
         JOIN Document ON Snippet.document_id == Document.document_id
@@ -445,7 +427,8 @@ pub async fn fetch_marked_document(db: &SqlitePool) -> Result<Option<MarkedDocum
                 snippet: v.snippet.clone(),
             })
             .collect();
-        let page_document = MarkedDocument {
+        let page_document = DocumentSnippets {
+            document_id: snippets[0].document_id,
             document_name: snippets[0].document_name.clone(),
             snippets: all_snippets,
         };
@@ -453,13 +436,13 @@ pub async fn fetch_marked_document(db: &SqlitePool) -> Result<Option<MarkedDocum
     }
 }
 
-pub async fn set_latest_document(db: &SqlitePool, document: &str) -> Result<()> {
+pub async fn set_latest_document(db: &SqlitePool, document_id: i32) -> Result<()> {
     sqlx::query("UPDATE Document SET is_last = NULL WHERE is_last = 1;")
         .execute(db)
         .await?;
 
-    sqlx::query("UPDATE Document SET is_last = 1 WHERE document_name = $1;")
-        .bind(document)
+    sqlx::query("UPDATE Document SET is_last = 1 WHERE document_id = $1;")
+        .bind(document_id)
         .execute(db)
         .await?;
 
@@ -505,7 +488,7 @@ pub async fn add_snippet(db: &SqlitePool, snippet: &str, document_name: &str) ->
         .execute(db)
         .await?;
 
-    let document_row = sqlx::query_as::<_, DocumentRow>(
+    let document_row = sqlx::query_as::<_, Document>(
         "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
     )
     .bind(document_name)
@@ -528,44 +511,34 @@ pub async fn add_document(
     snippet: &str,
     tfidf_terms: Vec<String>,
     rake_phrases: Vec<String>,
-) -> Result<bool> {
-    let document_exists = !sqlx::query_as::<_, DocumentRow>(
+) -> Result<i32> {
+    let document = sqlx::query_as::<_, Document>(
         "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
     )
-    .bind(document_name)
-    .fetch_all(db)
-    .await?
-    .is_empty();
+    .bind(document_name.trim())
+    .fetch_optional(db)
+    .await?;
 
-    if document_exists {
+    if let Some(document) = document {
         println!("Document with the corresponding title already exists");
 
-        let document_row = sqlx::query_as::<_, DocumentRow>(
-            "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
-        )
-        .bind(document_name)
-        .fetch_one(db)
-        .await?;
-
-        let document_id = document_row.document_id;
-
-        add_snippet_with_id(db, snippet, document_id).await?;
-        update_tfidf_data(db, tfidf_terms, document_name).await?;
-        update_rake_data(db, rake_phrases, document_name).await?;
+        add_snippet_with_id(db, snippet, document.document_id).await?;
+        update_tfidf_data(db, tfidf_terms, document.document_id).await?;
+        update_rake_data(db, rake_phrases, document.document_id).await?;
 
         println!("Appended snippet to existing doc");
 
-        return Ok(false);
+        return Ok(document.document_id);
     }
 
     sqlx::query(
         "INSERT INTO Document (document_name) VALUES ($1) ON CONFLICT(document_name) DO NOTHING;",
     )
-    .bind(document_name)
+    .bind(document_name.trim())
     .execute(db)
     .await?;
 
-    let document_row = sqlx::query_as::<_, DocumentRow>(
+    let document_row = sqlx::query_as::<_, Document>(
         "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
     )
     .bind(document_name)
@@ -575,8 +548,8 @@ pub async fn add_document(
     let document_id = document_row.document_id;
 
     add_snippet_with_id(db, snippet, document_id).await?;
-    update_tfidf_data(db, tfidf_terms, document_name).await?;
-    update_rake_data(db, rake_phrases, document_name).await?;
+    update_tfidf_data(db, tfidf_terms, document_id).await?;
+    update_rake_data(db, rake_phrases, document_id).await?;
 
-    Ok(true)
+    Ok(document_id)
 }

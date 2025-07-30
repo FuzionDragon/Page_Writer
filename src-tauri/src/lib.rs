@@ -4,7 +4,7 @@ use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 mod brain_compiler;
 use brain_compiler::{submit_snippet, update_snippet};
 
-use crate::brain_compiler::{sqlite_interface, CorpusSnippets, MarkedDocument};
+use crate::brain_compiler::{sqlite_interface, CorpusSnippets, DocumentSnippets};
 
 const PATH: &str = "dev/rust/Page_Writer/src-tauri/src/data.db";
 
@@ -48,16 +48,14 @@ async fn setup_db() -> Result<SqlitePool, Error> {
 }
 
 #[tauri::command]
-async fn submit(snippet: String, title: String) -> Result<(), Error> {
+async fn submit(snippet: String, title: String) -> Result<Option<i32>, Error> {
     let db = setup_db().await?;
 
     if title.is_empty() {
-        submit_snippet(&snippet, None, &db).await?;
+        Ok(submit_snippet(&snippet, None, &db).await?)
     } else {
-        submit_snippet(&snippet, Some(&title), &db).await?;
+        Ok(submit_snippet(&snippet, Some(&title), &db).await?)
     }
-
-    Ok(())
 }
 
 #[tauri::command]
@@ -79,7 +77,7 @@ async fn load_snippets() -> Result<CorpusSnippets, Error> {
 }
 
 #[tauri::command]
-async fn load_document(document_name: String) -> Result<Option<MarkedDocument>, Error> {
+async fn load_document(document_name: String) -> Result<Option<DocumentSnippets>, Error> {
     let db = setup_db().await?;
 
     let result = sqlite_interface::fetch_document(&db, &document_name).await?;
@@ -95,16 +93,16 @@ async fn print(text: String) -> Result<(), Error> {
 }
 
 #[tauri::command]
-async fn move_snippet(snippet_id: i32, document_name: String) -> Result<(), Error> {
+async fn move_snippet(snippet_id: i32, document_id: i32) -> Result<(), Error> {
     let db = setup_db().await?;
 
-    sqlite_interface::move_snippet(&db, snippet_id, &document_name).await?;
+    sqlite_interface::move_snippet(&db, snippet_id, document_id).await?;
 
     Ok(())
 }
 
 #[tauri::command]
-async fn fetch_marked_document() -> Result<Option<MarkedDocument>, Error> {
+async fn fetch_marked_document() -> Result<Option<DocumentSnippets>, Error> {
     let db = setup_db().await?;
 
     let marked_document = sqlite_interface::fetch_marked_document(&db).await?;
@@ -117,19 +115,19 @@ async fn fetch_marked_document() -> Result<Option<MarkedDocument>, Error> {
 }
 
 #[tauri::command]
-async fn mark_document(document_name: String) -> Result<(), Error> {
+async fn mark_document(document_id: i32) -> Result<(), Error> {
     let db = setup_db().await?;
 
-    sqlite_interface::set_marked_document(&db, &document_name).await?;
+    sqlite_interface::set_marked_document(&db, document_id).await?;
 
     Ok(())
 }
 
 #[tauri::command]
-async fn delete_document(document_name: String) -> Result<(), Error> {
+async fn delete_document(document_id: i32) -> Result<(), Error> {
     let db = setup_db().await?;
 
-    sqlite_interface::delete_document(&db, &document_name).await?;
+    sqlite_interface::delete_document(&db, document_id).await?;
 
     Ok(())
 }

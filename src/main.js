@@ -7,9 +7,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   const marked_document = await invoke('fetch_marked_document')
     .catch((error) => console.log("Error caught:" + error));
 
-  document.getElementById('marked_document').innerText = marked_document.document_name;
+  if (marked_document === null) {
+    document.getElementById('marked_document').innerText = "None";
+  } else {
+    document.getElementById('marked_document').innerText = marked_document.document_name;
+  }
 
-  if (marked_document.document_name === "None") {
+  if (document.getElementById('marked_document').innerText === "None") {
     document.getElementById('rightnav').hidden = true;
   } else {
     document.getElementById('rightnav').hidden = false;
@@ -18,6 +22,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 const submit = function() {
   invoke('submit', { snippet: snippet_input.value, title: title_input.value })
+    .then((document_id) => {
+      if (document_id !== null) {
+        localStorage['current_document_id'] = document_id;
+      }
+    })
     .catch((error) => console.log(error));
   snippet_input.value = "";
   title_input.value = "";

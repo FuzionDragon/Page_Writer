@@ -52,6 +52,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const corpus = await invoke('load_snippets')
     .catch((error) => console.log("error caught:" + error));
 
+  localStorage['corpus'] = corpus;
+
   fuse = new Fuse(Object.keys(corpus), {
     keys: ['title'],
     threshold: 0.4
@@ -90,10 +92,12 @@ document.getElementById("marked_document").onclick = function() {
   input.onkeydown = (e) => mark_document_bind(e);
 };
 
-document.getElementById("current_document").onclick = function() {
-  toggle_picker();
-  input.onkeydown = (e) => load_document_bind(e);
-};
+if (document.body.id === "view") {
+  document.getElementById("current_document").onclick = function() {
+    toggle_picker();
+    input.onkeydown = (e) => load_document_bind(e);
+  };
+}
 
 const load_document_bind = (e) => {
   if (e.key === "Enter") {
@@ -143,13 +147,23 @@ const update_view = async (search_document) => {
     document.getElementById('marked_document').innerText = marked_document.document_name;
   }
 
+  if (localStorage['current_document'] === null || localStorage['current_document'] === undefined) {
+    localStorage['current_document'] = "None";
+  }
+
+  document.getElementById('current_document').innerText = localStorage['current_document'];
+
+  if (localStorage['current_document'] === "None") {
+    return
+  }
+
   snippets = [];
   const snippet_container = document.getElementById('snippet');
   snippet_container.innerHTML = "";
 
+  let document_name = "None";
   const viewed_document = await invoke('load_document', { documentName: search_document })
     .catch((error) => console.log("Error caught:" + error));
-  let document_name = "None";
 
   if (viewed_document != null) {
     document_name = viewed_document.document_name;

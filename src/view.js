@@ -13,17 +13,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('marked_document').innerText = marked_document.document_name;
   }
 
-  //  if (document.getElementById('marked_document').innerText === "None") {
-  //    document.getElementById('rightnav').hidden = true;
-  //  } else {
-  //    document.getElementById('rightnav').hidden = false;
-  //  }
+  if (localStorage['current_document'] === null || localStorage['current_document'] === undefined) {
+    localStorage['current_document'] = "None";
+  }
 
-  renderView(localStorage['current_document']);
+  document.getElementById('current_document').innerText = localStorage['current_document'];
+
+  if (localStorage['current_document'] !== "None") {
+    renderView(localStorage['current_document']);
+  }
 });
 
 const renderView = async (search_document) => {
   snippets = [];
+  // requires the cache to have the document id
   const viewed_document = await invoke('load_document', { documentName: search_document })
     .catch((error) => console.log("Error caught:" + error));
   let document_name = "None";
@@ -40,16 +43,8 @@ const renderView = async (search_document) => {
     );
   }
 
-  //  const document_title = document.createElement('h1');
-  document.getElementById("document_name").innerText = document_name;
-
-  if (localStorage['current_document'] === null) {
-    localStorage['current_document'] = "None";
-  }
-
-  document.getElementById('current_document').innerText = localStorage['current_document'];
-
   const snippet_container = document.getElementById('snippet');
+  document.getElementById("document_name").innerText = document_name;
 
   for (const snippet of snippets.entries()) {
     const view_card = document.createElement('div');
