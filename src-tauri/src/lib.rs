@@ -2,6 +2,7 @@ use dirs::home_dir;
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 
 mod brain_compiler;
+mod config;
 use brain_compiler::{submit_snippet, update_snippet};
 
 use crate::brain_compiler::{sqlite_interface, CorpusSnippets, DocumentSnippets};
@@ -45,6 +46,13 @@ async fn setup_db() -> Result<SqlitePool, Error> {
     sqlite_interface::init(&db).await?;
 
     Ok(db)
+}
+
+#[tauri::command]
+async fn load_config() -> Result<(), Error> {
+    config::fetch_config().await?;
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -146,6 +154,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            load_config,
             submit,
             update,
             load_snippets,
