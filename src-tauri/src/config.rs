@@ -1,19 +1,19 @@
 use anyhow::{Error, Ok};
 use dirs::home_dir;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use toml;
 
 const PATH: &str = "dev/rust/Page_Writer/src-tauri/src/config.toml";
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Settings {
     cosine_weight: Option<f32>,
     threshold: Option<f32>,
     latest_bias: Option<f32>,
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Keybindings {
     pub switch_menu: Option<String>,
     pub submit_snippet: Option<String>,
@@ -26,13 +26,13 @@ pub struct Keybindings {
     pub update_selected_snippet: Option<String>,
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct Config {
     settings: Settings,
     keybindings: Keybindings,
 }
 
-pub async fn fetch_config() -> Result<(), Error> {
+async fn fetch_config() -> Result<Config, Error> {
     let path = home_dir()
         .expect("Unable to find home directory")
         .join(PATH)
@@ -46,5 +46,13 @@ pub async fn fetch_config() -> Result<(), Error> {
 
     println!("{:?}", config);
 
-    Ok(())
+    Ok(config)
+}
+
+pub async fn fetch_keybindings() -> Result<Keybindings, Error> {
+    Ok(fetch_config().await?.keybindings)
+}
+
+pub async fn fetch_settings() -> Result<Settings, Error> {
+    Ok(fetch_config().await?.settings)
 }

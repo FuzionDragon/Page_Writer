@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
+import { keybind_handler } from './config';
 
 const snippet_input = document.getElementById('snippet-input');
 const title_input = document.getElementById('title-input');
@@ -57,10 +58,10 @@ snippet_input.oninput = () => {
 }
 
 window.onkeydown = function(e) {
-  if (e.ctrlKey && e.key === "Enter") {
+  if (keybind_handler(e, "submit_snippet")) {
     submit();
   }
-  if (e.ctrlKey && e.key === "t") {
+  if (keybind_handler(e, "switch_menu")) {
     window.location.href = "./pages/view.html";
   }
 }

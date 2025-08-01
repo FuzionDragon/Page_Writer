@@ -1,6 +1,7 @@
 import { marked } from 'marked';
 import { invoke } from '@tauri-apps/api/core';
 import Fuse from "fuse.js";
+import { keybind_handler } from './config';
 
 const first_element = document.getElementById('leftnav');
 
@@ -68,7 +69,6 @@ document.oninput = function(e) {
   });
 
   results.forEach(result => {
-    console.log(result.item);
     const doc = document.createElement('li');
     doc.innerText = result.item;
     document_list.appendChild(doc);
@@ -76,11 +76,11 @@ document.oninput = function(e) {
 };
 
 document.onkeydown = function(e) {
-  if (e.ctrlKey && e.key === "e") {
+  if (keybind_handler(e, "marked_document_picker")) {
     toggle_picker();
     input.onkeydown = (e) => mark_document_bind(e);
   }
-  if (e.ctrlKey && e.key === "f") {
+  if (keybind_handler(e, "current_document_picker")) {
     console.log("Loading picker for local docs");
     toggle_picker();
     input.onkeydown = (e) => load_document_bind(e);
@@ -209,15 +209,19 @@ const editSnippet = (view_card) => {
   document.getElementById("move_snippet").onclick = () => moveSnippet(edit_card, id);
 
   edit_card.onkeydown = (e) => {
-    if (e.ctrlKey && e.key === "Enter") {
+    if (keybind_handler(e, "update_selected_snippet")) {
       saveSnippet(edit_card, id);
-      toggle_overlay();
+    }
+    if (keybind_handler(e, "delete_selected_snippet")) {
+      deleteSnippet(edit_card, id);
+    }
+    if (keybind_handler(e, "move_selected_snippet")) {
+      moveSnippet(edit_card, id);
     }
   }
 }
 
 const saveSnippet = (edit_card, id) => {
-  console.log("Updating snippet");
   const content = marked.parse(edit_card.value);
   const snippet = snippets.find(i => i.snippet_id === parseInt(id));
   snippet.raw = edit_card.value;
@@ -229,6 +233,7 @@ const saveSnippet = (edit_card, id) => {
   invoke('update', { snippetId: parseInt(id), snippet: edit_card.value, documentName: snippet.document_name });
   view_card.onclick = () => editSnippet(view_card);
   edit_card.replaceWith(view_card);
+  toggle_overlay();
 }
 
 const deleteSnippet = (edit_card, id) => {

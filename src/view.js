@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { marked } from 'marked';
 import { move_document_bind, toggle_picker } from './search';
+import { keybind_handler } from './config';
 
 let snippets = [];
 document.addEventListener('DOMContentLoaded', async () => {
@@ -85,9 +86,14 @@ const editSnippet = (view_card) => {
   document.getElementById("move_snippet").onclick = () => moveSnippet(edit_card, id);
 
   edit_card.onkeydown = (e) => {
-    if (e.ctrlKey && e.key === "Enter") {
+    if (keybind_handler(e, "update_selected_snippet")) {
       saveSnippet(edit_card, id);
-      toggle_overlay();
+    }
+    if (keybind_handler(e, "delete_selected_snippet")) {
+      deleteSnippet(edit_card, id);
+    }
+    if (keybind_handler(e, "move_selected_snippet")) {
+      moveSnippet(edit_card, id);
     }
   }
 }
@@ -105,10 +111,11 @@ const saveSnippet = (edit_card, id) => {
   invoke('update', { snippetId: parseInt(id), snippet: edit_card.value, documentName: snippet.document_name });
   view_card.onclick = () => editSnippet(view_card);
   edit_card.replaceWith(view_card);
+  toggle_overlay();
 }
 
 window.onkeydown = function(e) {
-  if (e.ctrlKey && e.key === "t") {
+  if (keybind_handler(e, "switch_menu")) {
     window.location.href = "../index.html";
   }
 }

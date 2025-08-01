@@ -5,7 +5,10 @@ mod brain_compiler;
 mod config;
 use brain_compiler::{submit_snippet, update_snippet};
 
-use crate::brain_compiler::{sqlite_interface, CorpusSnippets, DocumentSnippets};
+use crate::{
+    brain_compiler::{sqlite_interface, CorpusSnippets, DocumentSnippets},
+    config::{Keybindings, Settings},
+};
 
 const PATH: &str = "dev/rust/Page_Writer/src-tauri/src/data.db";
 
@@ -49,10 +52,17 @@ async fn setup_db() -> Result<SqlitePool, Error> {
 }
 
 #[tauri::command]
-async fn load_config() -> Result<(), Error> {
-    config::fetch_config().await?;
+async fn load_keybindings() -> Result<Keybindings, Error> {
+    let keybindings = config::fetch_keybindings().await?;
 
-    Ok(())
+    Ok(keybindings)
+}
+
+#[tauri::command]
+async fn load_settings() -> Result<Settings, Error> {
+    let settings = config::fetch_settings().await?;
+
+    Ok(settings)
 }
 
 #[tauri::command]
@@ -154,7 +164,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            load_config,
+            load_keybindings,
             submit,
             update,
             load_snippets,
