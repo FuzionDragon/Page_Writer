@@ -141,5 +141,6 @@ const deleteSnippet = (edit_card, id) => {
 
 const moveSnippet = (edit_card, id) => {
   toggle_picker();
+  current_action.innerText = "Move Snippet";
   document.getElementById("document_input").onkeydown = (e) => move_document_bind(e, id, edit_card);
 }

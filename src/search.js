@@ -5,15 +5,16 @@ import Toastify from 'toastify-js'
 
 import { keybind_handler } from './config';
 
-const first_element = document.getElementById('leftnav');
+const picker_container = document.createElement('div');
+picker_container.id = "picker_container";
 
 const picker = document.createElement('div');
 picker.id = "document-picker";
 picker.className = "overlay-document-picker";
 
-// should indicate to the user what the chosen document is for
 const current_action = document.createElement('h3');
-
+current_action.innerText = "None";
+current_action.id = "picker_action";
 
 const input = document.createElement('input');
 input.type = "text";
@@ -27,7 +28,7 @@ picker.appendChild(current_action);
 picker.appendChild(input);
 picker.appendChild(document_list);
 
-document.body.insertBefore(picker, first_element);
+document.getElementById("navbar").appendChild(picker);
 
 let results = [];
 let fuse;
@@ -85,23 +86,26 @@ document.oninput = function(e) {
 document.onkeydown = function(e) {
   if (keybind_handler(e, "marked_document_picker")) {
     toggle_picker();
+    current_action.innerText = "Mark Document";
     input.onkeydown = (e) => mark_document_bind(e);
   }
   if (keybind_handler(e, "current_document_picker")) {
-    console.log("Loading picker for local docs");
     toggle_picker();
+    current_action.innerText = "Set Current Document";
     input.onkeydown = (e) => load_document_bind(e);
   }
 }
 
 document.getElementById("marked_document").onclick = function() {
   toggle_picker();
+  current_action.innerText = "Mark Document";
   input.onkeydown = (e) => mark_document_bind(e);
 };
 
 if (document.body.id === "view") {
   document.getElementById("current_document").onclick = function() {
     toggle_picker();
+    current_action.innerText = "Set Current Document";
     input.onkeydown = (e) => load_document_bind(e);
   };
 }
@@ -113,7 +117,7 @@ const load_document_bind = (e) => {
       document.getElementById("current_document").innerText = document_name;
       localStorage['current_document'] = document_name;
       Toastify({
-        text: "Setting current document to: " + document_name,
+        text: "Set current document to: " + document_name,
         stopOnFocus: true,
         gravity: "bottom",
         position: "center"
@@ -142,7 +146,7 @@ const mark_document_bind = (e) => {
       invoke("mark_document", { documentName: document_name });
       document.getElementById("marked_document").innerText = document_name;
       Toastify({
-        text: "Setting marked document to: " + document_name,
+        text: "Set marked document to: " + document_name,
         stopOnFocus: true,
         gravity: "bottom",
         position: "center"
@@ -266,7 +270,7 @@ const deleteSnippet = (edit_card, id) => {
   invoke('delete_snippet', { snippetId: parseInt(id) });
   edit_card.remove();
   Toastify({
-    text: "Deleting selected snippet",
+    text: "Deleted selected snippet",
     stopOnFocus: true,
     gravity: "bottom",
     position: "center"
@@ -276,6 +280,7 @@ const deleteSnippet = (edit_card, id) => {
 
 const moveSnippet = (edit_card, id) => {
   toggle_picker();
+  current_action.innerText = "Move Selected Snippet";
   input.onkeydown = (e) => move_document_bind(e, id, edit_card);
 }
 
@@ -319,6 +324,7 @@ export const move_document_bind = (e, id, edit_card) => {
 
 const deleteDocument = () => {
   toggle_picker();
+  current_action.innerText = "Delete Document";
   input.onkeydown = (e) => delete_document_bind(e);
 }
 
