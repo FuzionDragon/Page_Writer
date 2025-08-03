@@ -1,6 +1,8 @@
 import { marked } from 'marked';
 import { invoke } from '@tauri-apps/api/core';
 import Fuse from "fuse.js";
+import Toastify from 'toastify-js'
+
 import { keybind_handler } from './config';
 
 const first_element = document.getElementById('leftnav');
@@ -8,6 +10,10 @@ const first_element = document.getElementById('leftnav');
 const picker = document.createElement('div');
 picker.id = "document-picker";
 picker.className = "overlay-document-picker";
+
+// should indicate to the user what the chosen document is for
+const current_action = document.createElement('h3');
+
 
 const input = document.createElement('input');
 input.type = "text";
@@ -17,6 +23,7 @@ input.id = "document_input";
 const document_list = document.createElement('ul');
 document_list.id = "document_list";
 
+picker.appendChild(current_action);
 picker.appendChild(input);
 picker.appendChild(document_list);
 
@@ -101,37 +108,55 @@ if (document.body.id === "view") {
 
 const load_document_bind = (e) => {
   if (e.key === "Enter") {
-    let document_name = "None";
     if (results.length > 0 && Array.isArray(results)) {
-      console.log("Results found");
-      document_name = results[0].item;
+      const document_name = results[0].item;
+      document.getElementById("current_document").innerText = document_name;
+      localStorage['current_document'] = document_name;
+      Toastify({
+        text: "Setting current document to: " + document_name,
+        stopOnFocus: true,
+        gravity: "bottom",
+        position: "center"
+      }).showToast();
     } else {
-      console.log("No results found");
+      Toastify({
+        text: "No documents found",
+        stopOnFocus: true,
+        gravity: "bottom",
+        position: "center"
+      }).showToast();
     }
     toggle_picker();
     if (document.body.id === "view") {
       update_view(document_name);
     }
 
-    document.getElementById("current_document").innerText = document_name;
-    localStorage['current_document'] = document_name;
     input.value = "";
   }
 }
 
 const mark_document_bind = (e) => {
   if (e.key === "Enter") {
-    let document_name = "None";
     if (results.length > 0 && Array.isArray(results)) {
-      console.log("Results found");
-      document_name = results[0].item;
+      const document_name = results[0].item;
+      invoke("mark_document", { documentName: document_name });
+      document.getElementById("marked_document").innerText = document_name;
+      Toastify({
+        text: "Setting marked document to: " + document_name,
+        stopOnFocus: true,
+        gravity: "bottom",
+        position: "center"
+      }).showToast();
     } else {
-      console.log("No results found");
+      Toastify({
+        text: "No documents found",
+        stopOnFocus: true,
+        gravity: "bottom",
+        position: "center"
+      }).showToast();
     }
 
     toggle_picker();
-    invoke("mark_document", { documentName: document_name });
-    document.getElementById("marked_document").innerText = document_name;
     input.value = "";
   }
 }
@@ -240,6 +265,12 @@ const deleteSnippet = (edit_card, id) => {
   snippets.pop(i => i.snippet_id === parseInt(id));
   invoke('delete_snippet', { snippetId: parseInt(id) });
   edit_card.remove();
+  Toastify({
+    text: "Deleting selected snippet",
+    stopOnFocus: true,
+    gravity: "bottom",
+    position: "center"
+  }).showToast();
   toggle_overlay();
 }
 
@@ -250,14 +281,33 @@ const moveSnippet = (edit_card, id) => {
 
 export const move_document_bind = (e, id, edit_card) => {
   if (e.key === "Enter") {
-    let document_name = "None";
     if (results.length > 0 && Array.isArray(results)) {
-      console.log("Results found");
       snippets.pop(i => i.snippet_id === parseInt(id));
-      document_name = results[0].item;
-      invoke('move_snippet', { snippetId: parseInt(id), documentName: document_name });
+      const document_name = results[0].item;
+      invoke('move_snippet', { snippetId: parseInt(id), documentName: document_name })
+        .then(() =>
+          Toastify({
+            text: "Moved snippet successfully to document: " + document_name,
+            stopOnFocus: true,
+            gravity: "bottom",
+            position: "center"
+          }).showToast()
+        )
+        .catch((error) =>
+          Toastify({
+            text: "Failed to move snippet due to: " + error,
+            stopOnFocus: true,
+            gravity: "bottom",
+            position: "center"
+          }).showToast()
+        );
     } else {
-      console.log("No results found");
+      Toastify({
+        text: "No results found",
+        stopOnFocus: true,
+        gravity: "bottom",
+        position: "center"
+      }).showToast();
     }
     edit_card.remove();
     toggle_picker();
@@ -268,17 +318,14 @@ export const move_document_bind = (e, id, edit_card) => {
 }
 
 const deleteDocument = () => {
-  console.log("deleting document");
   toggle_picker();
   input.onkeydown = (e) => delete_document_bind(e);
 }
 
 const delete_document_bind = (e) => {
   if (e.key === "Enter") {
-    let document_name = "None";
     if (results.length > 0 && Array.isArray(results)) {
-      console.log("Results found");
-      document_name = results[0].item;
+      const document_name = results[0].item;
       invoke("delete_document", { documentName: document_name });
       if (document.body.id === "view" && localStorage['current_document'] === document_name) {
         document.getElementById("snippet").innerHTML = "";
@@ -287,8 +334,19 @@ const delete_document_bind = (e) => {
         localStorage['current_document'] = "None";
       }
       results.pop(i => i.item === document_name);
+      Toastify({
+        text: "Moved snippet successfully to document: " + document_name,
+        stopOnFocus: true,
+        gravity: "bottom",
+        position: "center"
+      }).showToast()
     } else {
-      console.log("No results found");
+      Toastify({
+        text: "No results found",
+        stopOnFocus: true,
+        gravity: "bottom",
+        position: "center"
+      }).showToast();
     }
     toggle_picker();
 
@@ -299,7 +357,6 @@ const delete_document_bind = (e) => {
 const deleteCurrentDocument = () => {
   let document_name = localStorage['current_document'];
   if (document_name !== "None") {
-    console.log("Results found");
     invoke("delete_document", { documentName: document_name });
     if (document.body.id === "view") {
       document.getElementById("snippet").innerHTML = "";
@@ -308,8 +365,19 @@ const deleteCurrentDocument = () => {
     }
     results.pop(i => i.item === document_name);
     localStorage['current_document'] = "None";
+    Toastify({
+      text: "Deleted current document: " + document_name,
+      stopOnFocus: true,
+      gravity: "bottom",
+      position: "center"
+    }).showToast()
   } else {
-    console.log("No results found");
+    Toastify({
+      text: "No current document found, no documents deleted",
+      stopOnFocus: true,
+      gravity: "bottom",
+      position: "center"
+    }).showToast()
   }
 
   document.getElementById("document_input").value = "";

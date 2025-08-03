@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { marked } from 'marked';
 import { move_document_bind, toggle_picker } from './search';
 import { keybind_handler } from './config';
+import Toastify from 'toastify-js'
 
 let snippets = [];
 document.addEventListener('DOMContentLoaded', async () => {
@@ -99,7 +100,6 @@ const editSnippet = (view_card) => {
 }
 
 const saveSnippet = (edit_card, id) => {
-  console.log("Updating snippet");
   const content = marked.parse(edit_card.value);
   const snippet = snippets.find(i => i.snippet_id === parseInt(id));
   snippet.raw = edit_card.value;
@@ -111,6 +111,12 @@ const saveSnippet = (edit_card, id) => {
   invoke('update', { snippetId: parseInt(id), snippet: edit_card.value, documentName: snippet.document_name });
   view_card.onclick = () => editSnippet(view_card);
   edit_card.replaceWith(view_card);
+  Toastify({
+    text: "Updated snippet",
+    stopOnFocus: true,
+    gravity: "bottom",
+    position: "center"
+  }).showToast()
   toggle_overlay();
 }
 
@@ -124,6 +130,12 @@ const deleteSnippet = (edit_card, id) => {
   snippets.pop(i => i.snippet_id === parseInt(id));
   invoke('delete_snippet', { snippetId: parseInt(id) });
   edit_card.remove();
+  Toastify({
+    text: "Deleted selected snippet",
+    stopOnFocus: true,
+    gravity: "bottom",
+    position: "center"
+  }).showToast()
   toggle_overlay();
 }
 

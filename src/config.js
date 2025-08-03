@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import Toastify from 'toastify-js'
 
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("running config script");
@@ -8,6 +8,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         localStorage['keybinds'] = keybindings;
       })
       .catch((error) => console.log("Error found: " + error));
+
+    Toastify({
+      text: "Keybinds not found, caching based on config file",
+      stopOnFocus: true,
+      gravity: "bottom",
+      position: "center"
+    }).showToast();
   }
 })
 
