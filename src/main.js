@@ -1,3 +1,4 @@
+import Toastify from 'toastify-js'
 import { invoke } from '@tauri-apps/api/core';
 import { keybind_handler } from './config';
 
@@ -27,6 +28,12 @@ const submit = function() {
       if (document_id !== null) {
         localStorage['current_document_id'] = document_id;
       }
+      Toastify({
+        text: "Successfully submitted snippet",
+        stopOnFocus: true,
+        gravity: "bottom",
+        position: "center"
+      }).showToast()
     })
     .catch((error) => console.log(error));
   snippet_input.value = "";
@@ -62,6 +69,6 @@ window.onkeydown = function(e) {
     submit();
   }
   if (keybind_handler(e, "switch_menu")) {
-    window.location.href = "./pages/view.html";
+    window.location.href = "./view.html";
   }
 }

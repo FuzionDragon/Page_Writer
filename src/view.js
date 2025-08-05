@@ -122,7 +122,7 @@ const saveSnippet = (edit_card, id) => {
 
 window.onkeydown = function(e) {
   if (keybind_handler(e, "switch_menu")) {
-    window.location.href = "../index.html";
+    window.location.href = "./index.html";
   }
 }
 

@@ -122,6 +122,9 @@ const load_document_bind = (e) => {
         gravity: "bottom",
         position: "center"
       }).showToast();
+      if (document.body.id === "view") {
+        update_view(document_name);
+      }
     } else {
       Toastify({
         text: "No documents found",
@@ -131,10 +134,6 @@ const load_document_bind = (e) => {
       }).showToast();
     }
     toggle_picker();
-    if (document.body.id === "view") {
-      update_view(document_name);
-    }
-
     input.value = "";
   }
 }
@@ -159,7 +158,6 @@ const mark_document_bind = (e) => {
         position: "center"
       }).showToast();
     }
-
     toggle_picker();
     input.value = "";
   }
@@ -191,6 +189,7 @@ const update_view = async (search_document) => {
   snippet_container.innerHTML = "";
 
   let document_name = "None";
+  console.log(search_document);
   const viewed_document = await invoke('load_document', { documentName: search_document })
     .catch((error) => console.log("Error caught:" + error));
 

@@ -1,5 +1,5 @@
 {
-  "name": "page_writer",
+  "name": "PageWriter",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -10,8 +10,8 @@
     "tauri": "tauri"
   },
   "devDependencies": {
-    "@tauri-apps/api": "^2.6.0",
-    "@tauri-apps/cli": "^2",
+    "@tauri-apps/api": "^2.7.0",
+    "@tauri-apps/cli": "^2.7.1",
     "fuse.js": "^7.1.0",
     "marked": "^16.0.0",
     "sass": "^1.89.2",
