@@ -11,7 +11,7 @@ use crate::{
 
 const DATA_PATH: &str = "PageWriter/data.db";
 
-const ANDROID_APP_NAME: &str = "com.davidl.page-writer";
+const ANDROID_APP_NAME: &str = "com.davidl.page_writer";
 
 #[derive(Debug, thiserror::Error)]
 enum Error {

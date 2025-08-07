@@ -2648,7 +2648,6 @@ dependencies = [
  "anyhow",
  "dirs",
  "human_regex",
- "ndk",
  "rust-stemmers",
  "serde",
  "serde_json",

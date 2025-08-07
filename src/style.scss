@@ -94,12 +94,11 @@ a {
 }
 
 textarea {
-//  @include border;
   color: light-dark($background-color, $foreground-color);
   background-color: light-dark($foreground-color, $background-color);
   font-size: 1.2em;
   width: 80%;
-  height: 1.2em;
+//  height: 1.2em;
   resize: none;
   outline: none;
   overflow: hidden;
@@ -163,6 +162,13 @@ textarea {
   height: 20%;
 }
 
+#submit-snippet {
+  @include border;
+  font-size: 1.2em;
+  padding: 0.5em;
+  margin: 1em;
+}
+
 #snippet-context {
   display: none;
 }
@@ -175,10 +181,6 @@ textarea {
 #view {
   max-width: 70%;
   text-align: left;
-}
-
-#marked_document {
-  font-weight: 16;
 }
 
 @media (max-width: $mediaMaxWidth) {
@@ -254,7 +256,7 @@ textarea {
   color: white;
   cursor: pointer;
   font-family: inherit;
-  font-size: 1em;
+  font-size: 1.2em;
   opacity: 0.4;
   padding: 0 5px;
 }
@@ -272,7 +274,7 @@ textarea {
 }
 
 .toastify-bottom {
-  bottom: -150px;
+  bottom: -1.2em;
 }
 
 .toastify-rounded {

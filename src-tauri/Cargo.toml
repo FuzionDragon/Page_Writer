@@ -28,7 +28,6 @@ whatlang = "0.16.4"
 human_regex = "0.3.0"
 thiserror = "2.0.12"
 toml = "0.9.4"
-ndk = "0.9.0"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

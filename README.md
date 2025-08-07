@@ -46,12 +46,13 @@ Settings? : Escape
 
 ### TODO
 
-- Windows and Android support (no plans for Ios or MAC as of writing).
+- Windows support (no plans for Ios or MAC as of writing).
 
-- Markdown imported and exporter, both file and directory based.
+- Other QoL additions that I am not thinking of.
 
-- Potentially multiple databases.
+- Potentially multiple databases?
 
 - Spellchecker?
 
-- Other QoL additions that I am not thinking of.
+- Markdown imported and exporter, both file and directory based?
+
