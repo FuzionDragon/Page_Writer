@@ -24,10 +24,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 const submit = function() {
   invoke('submit', { snippet: snippet_input.value, title: title_input.value })
-    .then((document_id) => {
-      if (document_id !== null) {
-        localStorage['current_document_id'] = document_id;
-      }
+    .then(() => {
       Toastify({
         text: "Successfully submitted snippet",
         stopOnFocus: true,

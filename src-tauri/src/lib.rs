@@ -1,4 +1,3 @@
-use dirs::home_dir;
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 
 mod brain_compiler;
@@ -10,7 +9,9 @@ use crate::{
     config::{Keybindings, Settings},
 };
 
-const PATH: &str = "dev/rust/Page_Writer/src-tauri/src/data.db";
+const DATA_PATH: &str = "PageWriter/data.db";
+
+const ANDROID_APP_NAME: &str = "com.davidl.page-writer";
 
 #[derive(Debug, thiserror::Error)]
 enum Error {
@@ -31,13 +32,29 @@ impl serde::Serialize for Error {
     }
 }
 
+fn get_android_path() -> String {
+    let data_path = std::env::var("ANDROID_DATA").unwrap_or_else(|_| "/data/data".into());
+
+    format!(
+        "{}/{}/{}",
+        data_path,
+        ANDROID_APP_NAME.to_string(),
+        "files/data.db".to_string()
+    )
+}
+
 async fn setup_db() -> Result<SqlitePool, Error> {
-    let path = home_dir()
-        .expect("Unable to find home directory")
-        .join(PATH)
+    // Default
+    #[cfg(target_os = "linux")]
+    let path = dirs::data_local_dir()
+        .expect("Unable to find local data directory")
+        .join(DATA_PATH)
         .into_os_string()
         .into_string()
         .unwrap();
+
+    #[cfg(target_os = "android")]
+    let path = get_android_path();
 
     if !Sqlite::database_exists(&path).await.unwrap_or(false) {
         println!("Creating database: {}", &path);
@@ -165,6 +182,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             load_keybindings,
+            load_settings,
             submit,
             update,
             load_snippets,

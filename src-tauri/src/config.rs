@@ -1,10 +1,8 @@
 use anyhow::{Error, Ok};
-use dirs::home_dir;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use toml;
 
-const PATH: &str = "dev/rust/Page_Writer/src-tauri/src/config.toml";
+const CONFIGPATH: &str = "PageWriter/config.toml";
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Settings {
@@ -33,9 +31,10 @@ struct Config {
 }
 
 async fn fetch_config() -> Result<Config, Error> {
-    let path = home_dir()
-        .expect("Unable to find home directory")
-        .join(PATH)
+    // Default
+    let path = dirs::config_local_dir()
+        .expect("Unable to find local config directory")
+        .join(CONFIGPATH)
         .into_os_string()
         .into_string()
         .unwrap();

@@ -18,6 +18,8 @@ They are currently pieces of markdown which is stored in a Sqlite database, **ho
 
 - Interactive document view page with the ability to update, delete and move individual snippets.
 
+- Built using Tauri with vanilla Javascript, Scss for the frontend and Rust as a backend.
+
 ### Keybinds
 
 Keybinds are a central part of Page Writers usage and allows for better efficiency when navigating the application.
@@ -44,18 +46,12 @@ Settings? : Escape
 
 ### TODO
 
-- Config file for allowing the change of core keybinds and other potential settings, there may be a plan for an in-app settings menu to allow better accessibility.
+- Windows and Android support (no plans for Ios or MAC as of writing).
 
 - Markdown imported and exporter, both file and directory based.
 
 - Potentially multiple databases.
 
-- Windows and Android support (no plans for Ios or MAC as of writing).
-
 - Spellchecker?
-
-- Label for what the fuzzy finder is doing.
-
-- Toast notification system for more transparency of actions and interactivity.
 
 - Other QoL additions that I am not thinking of.
