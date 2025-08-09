@@ -1,3 +1,5 @@
+use std::{fs, path::Path};
+
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 
 mod brain_compiler;
@@ -32,15 +34,11 @@ impl serde::Serialize for Error {
     }
 }
 
-fn get_android_path() -> String {
-    let data_path = std::env::var("ANDROID_DATA").unwrap_or_else(|_| "/data/data".into());
+fn get_android_path() -> Result<String, Error> {
+    let data_path = format!("{}/{}/{}", "/data/data", ANDROID_APP_NAME, "files");
+    fs::create_dir_all(&data_path)?;
 
-    format!(
-        "{}/{}/{}",
-        data_path,
-        ANDROID_APP_NAME.to_string(),
-        "files/data.db".to_string()
-    )
+    Ok(data_path)
 }
 
 async fn setup_db() -> Result<SqlitePool, Error> {
@@ -54,7 +52,7 @@ async fn setup_db() -> Result<SqlitePool, Error> {
         .unwrap();
 
     #[cfg(target_os = "android")]
-    let path = get_android_path();
+    let path = get_android_path()?;
 
     if !Sqlite::database_exists(&path).await.unwrap_or(false) {
         println!("Creating database: {}", &path);
@@ -69,14 +67,28 @@ async fn setup_db() -> Result<SqlitePool, Error> {
 }
 
 #[tauri::command]
-async fn load_keybindings() -> Result<Keybindings, Error> {
+fn get_config_path() -> Result<String, Error> {
+    let path = config::fetch_config_path()?;
+
+    Ok(path)
+}
+
+#[tauri::command]
+fn get_android_path_tauri() -> Result<String, Error> {
+    let path = get_android_path()?;
+
+    Ok(path)
+}
+
+#[tauri::command]
+async fn load_keybindings() -> Result<Option<Keybindings>, Error> {
     let keybindings = config::fetch_keybindings().await?;
 
     Ok(keybindings)
 }
 
 #[tauri::command]
-async fn load_settings() -> Result<Settings, Error> {
+async fn load_settings() -> Result<Option<Settings>, Error> {
     let settings = config::fetch_settings().await?;
 
     Ok(settings)
@@ -181,6 +193,8 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            get_config_path,
+            get_android_path_tauri,
             load_keybindings,
             load_settings,
             submit,

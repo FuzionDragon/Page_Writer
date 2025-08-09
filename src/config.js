@@ -8,7 +8,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       .then((keybindings) => {
         localStorage['keybinds'] = keybindings;
       })
-      .catch((error) => console.log("Error found: " + error));
+      .catch((error) => {
+        console.log("Error found: " + error);
+        Toastify({
+          text: "Error found:" + error,
+          stopOnFocus: true,
+          gravity: "bottom",
+          position: "center"
+        }).showToast();
+      })
 
     Toastify({
       text: "Keybinds not found, caching based on config file",

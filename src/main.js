@@ -5,7 +5,47 @@ import { keybind_handler } from './config';
 const snippet_input = document.getElementById('snippet-input');
 const title_input = document.getElementById('title-input');
 
+// only for testing
+function getBrowser() {
+  if (navigator.userAgent.indexOf("Chrome") != -1) {
+    return "Chrome";
+  } else if (navigator.userAgent.indexOf("Opera") != -1) {
+    return "Opera";
+  } else if (navigator.userAgent.indexOf("MSIE") != -1) {
+    return "IE";
+  } else if (navigator.userAgent.indexOf("Firefox") != -1) {
+    return "Firefox";
+  } else {
+    return "unknown";
+  }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
+  Toastify({
+    text: getBrowser(),
+    stopOnFocus: true,
+    gravity: "bottom",
+    position: "center"
+  }).showToast()
+
+  invoke('get_config_path')
+    .then((path) =>
+      Toastify({
+        text: path,
+        stopOnFocus: true,
+        gravity: "bottom",
+        position: "center"
+      }).showToast()
+    )
+    .catch((error) =>
+      Toastify({
+        text: error,
+        stopOnFocus: true,
+        gravity: "bottom",
+        position: "center"
+      }).showToast()
+    )
+
   const marked_document = await invoke('fetch_marked_document')
     .catch((error) => console.log("Error caught:" + error));
 
@@ -26,7 +66,31 @@ const submit = function() {
         position: "center"
       }).showToast()
     })
-    .catch((error) => console.log(error));
+    .catch((error) =>
+      Toastify({
+        text: "Error submitting snippet" + error,
+        stopOnFocus: true,
+        gravity: "bottom",
+        position: "center"
+      }).showToast()
+    );
+  invoke('get_android_path_tauri')
+    .then((path) => {
+      Toastify({
+        text: "Android path: " + path,
+        stopOnFocus: true,
+        gravity: "bottom",
+        position: "center"
+      }).showToast()
+    })
+    .catch((error) =>
+      Toastify({
+        text: "Error getting path: " + error,
+        stopOnFocus: true,
+        gravity: "bottom",
+        position: "center"
+      }).showToast()
+    );
   snippet_input.value = "";
   title_input.value = "";
 }

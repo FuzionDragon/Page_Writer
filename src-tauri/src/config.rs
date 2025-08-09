@@ -1,8 +1,9 @@
 use anyhow::{Error, Ok};
 use serde::{Deserialize, Serialize};
-use std::fs;
+use std::{fs, path::Path};
 
 const CONFIGPATH: &str = "PageWriter/config.toml";
+const ANDROID_APP_NAME: &str = "com.davidl.page_writer";
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Settings {
@@ -30,8 +31,16 @@ struct Config {
     keybindings: Keybindings,
 }
 
-async fn fetch_config() -> Result<Config, Error> {
+fn get_android_path() -> String {
+    format!(
+        "{}/{}/{}",
+        "/data/data", ANDROID_APP_NAME, "files/config.toml"
+    )
+}
+
+pub fn fetch_config_path() -> Result<String, Error> {
     // Default
+    #[cfg(target_os = "linux")]
     let path = dirs::config_local_dir()
         .expect("Unable to find local config directory")
         .join(CONFIGPATH)
@@ -39,19 +48,54 @@ async fn fetch_config() -> Result<Config, Error> {
         .into_string()
         .unwrap();
 
+    #[cfg(target_os = "android")]
+    let path = get_android_path();
+
+    Ok(path)
+}
+
+async fn fetch_config() -> Result<Option<Config>, Error> {
+    // Default
+    #[cfg(target_os = "linux")]
+    let path = dirs::config_local_dir()
+        .expect("Unable to find local config directory")
+        .join(CONFIGPATH)
+        .into_os_string()
+        .into_string()
+        .unwrap();
+
+    #[cfg(target_os = "android")]
+    let path = get_android_path();
+
+    if !Path::new(&path).exists() {
+        return Ok(None);
+    }
+
     let contents = fs::read_to_string(path)?;
 
     let config: Config = toml::from_str(&contents)?;
 
     println!("{:?}", config);
 
-    Ok(config)
+    Ok(Some(config))
 }
 
-pub async fn fetch_keybindings() -> Result<Keybindings, Error> {
-    Ok(fetch_config().await?.keybindings)
+pub async fn fetch_keybindings() -> Result<Option<Keybindings>, Error> {
+    let config = fetch_config().await?;
+
+    if let Some(config) = config {
+        Ok(Some(config.keybindings))
+    } else {
+        Ok(None)
+    }
 }
 
-pub async fn fetch_settings() -> Result<Settings, Error> {
-    Ok(fetch_config().await?.settings)
+pub async fn fetch_settings() -> Result<Option<Settings>, Error> {
+    let config = fetch_config().await?;
+
+    if let Some(config) = config {
+        Ok(Some(config.settings))
+    } else {
+        Ok(None)
+    }
 }
