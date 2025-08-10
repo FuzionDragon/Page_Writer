@@ -1,8 +1,8 @@
 # Page Writer
 
-A powerful note taking application for spontanious note takers and power users.
+A powerful and unique note taking application for spontanious note takers and power users.
 
-Notes are treated as snippets of text that belongs to a collection of other related snippets, making up a document.
+Notes are treated as snippets of text that belongs to a collection of other related snippets, making up a document. The application allows for the manual and automatic means of assigning a snippet to a document.
 
 They are currently pieces of markdown which is stored in a Sqlite database, **however there are plans for exporting and importing actual markdown files**.
 
@@ -48,6 +48,14 @@ Settings? : Escape
 
 - Windows support (no plans for Ios or MAC as of writing).
 
+- Snippet submission menu on the view page (just with merging to current document).
+
+- Shortcuts menu.
+
+- Settings menu.
+
+- Document explorer?
+
 - Other QoL additions that I am not thinking of.
 
 - Potentially multiple databases?
@@ -55,4 +63,3 @@ Settings? : Escape
 - Spellchecker?
 
 - Markdown imported and exporter, both file and directory based?
-
