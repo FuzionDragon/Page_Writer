@@ -63,7 +63,6 @@ body {
 button {
   color: light-dark($background-color, $foreground-color);
   background-color: light-dark($foreground-color, $background-color);
-  padding: 5px;
   text-decoration: inherit;
   border: none;
   font-size: 1em;
@@ -146,6 +145,13 @@ textarea {
   bottom: 0;
 }
 
+#submit_snippet_overlay{
+  @include nav;
+  right: auto;
+  left: auto;
+  bottom: 0;
+}
+
 #title-input {
   font-size: 1.6em;
 }
@@ -162,11 +168,8 @@ textarea {
   height: 20%;
 }
 
-#submit-snippet {
-  @include border;
-  font-size: 1.2em;
-  padding: 0.5em;
-  margin: 1em;
+#marked_document {
+  font-weight: 900;
 }
 
 #snippet-context {
@@ -183,15 +186,14 @@ textarea {
   text-align: left;
 }
 
-@media (max-width: $mediaMaxWidth) {
-  #rightnav {
-    right: auto;
-    left: 47%;
-    transform: translateX(-50%);
-    top: 4em;
-  }
+#mobilenav {
+  @include border;
+  @include nav;
+  padding: 0.5em;
+  bottom: 0;
+  display: none;
 }
-      
+
 .card {
   @include border;
   margin: 2em;
@@ -295,4 +297,36 @@ textarea {
   right: 0;
   max-width: fit-content;
   max-width: -moz-fit-content;
+}
+
+@media (max-width: $mediaMaxWidth) {
+  #rightnav {
+    bottom: 0;
+    top: auto;
+  }
+  #leftnav {
+    bottom: 0;
+    top: auto;
+  }
+  #centernav {
+    bottom: 0;
+    top: auto;
+  }
+  #bottomrightnav {
+    top: 0;
+    bottom: auto;
+  }
+  #bottomleftnav {
+    top: 0;
+    bottom: auto;
+  }
+  #submit_snippet_overlay {
+    display: none;
+  }
+//  #mobilenav {
+//    display: block;
+//  }
+  #overlay-document-picker {
+    top: 20%;
+  }
 }
