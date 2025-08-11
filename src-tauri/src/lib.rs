@@ -12,7 +12,6 @@ use crate::{
 };
 
 const DATA_PATH: &str = "PageWriter/data.db";
-
 const ANDROID_APP_NAME: &str = "com.davidl.page_writer";
 
 #[derive(Debug, thiserror::Error)]
@@ -38,7 +37,7 @@ fn get_android_path() -> Result<String, Error> {
     let data_path = format!("{}/{}/{}", "/data/data", ANDROID_APP_NAME, "files");
     fs::create_dir_all(&data_path)?;
 
-    Ok(data_path)
+    Ok(format!("{}/data.db", data_path))
 }
 
 async fn setup_db() -> Result<SqlitePool, Error> {

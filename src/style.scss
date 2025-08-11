@@ -52,12 +52,12 @@ html {
 }
 
 body {
-  padding-top: 8em;
+  max-width: 80%;
+  padding-top: 6em;
   text-align: center;
   margin: auto;
   min-width: 320px;
   min-height: 100vh;
-  height: 100%;
 }
 
 button {
@@ -97,7 +97,6 @@ textarea {
   background-color: light-dark($foreground-color, $background-color);
   font-size: 1.2em;
   width: 80%;
-//  height: 1.2em;
   resize: none;
   outline: none;
   overflow: hidden;
@@ -114,7 +113,7 @@ textarea {
   justify-content: center; 
   align-items: center;
   padding: 0.5rem 1rem;
-  position: relative; // Needed for absolute positioning (alternative)
+  position: relative;
 }
 
 #centernav {
@@ -178,20 +177,10 @@ textarea {
 
 #index {
   overflow: hidden;
-  max-width: 70%;
 }
 
 #view {
-  max-width: 70%;
   text-align: left;
-}
-
-#mobilenav {
-  @include border;
-  @include nav;
-  padding: 0.5em;
-  bottom: 0;
-  display: none;
 }
 
 .card {
@@ -300,6 +289,10 @@ textarea {
 }
 
 @media (max-width: $mediaMaxWidth) {
+  body {
+    padding-top: 2em;
+    width: 100%;
+  }
   #rightnav {
     bottom: 0;
     top: auto;
@@ -320,12 +313,6 @@ textarea {
     top: 0;
     bottom: auto;
   }
-  #submit_snippet_overlay {
-    display: none;
-  }
-//  #mobilenav {
-//    display: block;
-//  }
   #overlay-document-picker {
     top: 20%;
   }
