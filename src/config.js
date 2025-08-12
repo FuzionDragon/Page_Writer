@@ -72,6 +72,12 @@ export const keybind_handler = (e, command) => {
       case "update_selected_snippet":
         console.log("update_selected_snippet");
         return (e.ctrlKey && e.key === "Enter")
+      case "toggle_add_snippet":
+        console.log("toggle_add_snippet");
+        return (e.ctrlKey && e.key === "q")
+      case "add_snippet":
+        console.log("add_snippet");
+        return (e.ctrlKey && e.key === "Enter")
       default:
         console.log("Command not found");
         break;

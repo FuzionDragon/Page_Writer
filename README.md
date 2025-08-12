@@ -54,6 +54,8 @@ Settings? : Escape
 
 - Settings menu.
 
+- Database syncing?
+
 - Document explorer?
 
 - Other QoL additions that I am not thinking of.

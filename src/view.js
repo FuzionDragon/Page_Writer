@@ -26,9 +26,52 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
+const snippet_add = document.getElementById('snippet-add');
+
+document.getElementById('submit-snippet').onclick = () => submit();
+const snippet_input = document.getElementById('snippet-input');
+snippet_input.onkeydown = (e) => {
+  if (keybind_handler(e, "add_snippet")) {
+    submit();
+  }
+}
+
+const submit = function() {
+  if (localStorage['current_document'] === "None" || snippet_input.value === "") {
+    Toastify({
+      text: "No current document selected or snippet input is empty",
+      stopOnFocus: true,
+      gravity: "bottom",
+      position: "center"
+    }).showToast()
+  } else {
+    invoke('submit', { snippet: snippet_input.value, title: localStorage['current_document'] })
+      .then(() => {
+        Toastify({
+          text: "Successfully submitted snippet",
+          stopOnFocus: true,
+          gravity: "bottom",
+          position: "center"
+        }).showToast();
+        renderView(localStorage['current_document']);
+      })
+      .catch((error) =>
+        Toastify({
+          text: "Error submitting snippet" + error,
+          stopOnFocus: true,
+          gravity: "bottom",
+          position: "center"
+        }).showToast()
+      );
+
+    snippet_input.value = "";
+    document.getElementById('snippet').innerHTML = "";
+    snippet_add.style.display = "none";
+  }
+}
+
 const renderView = async (search_document) => {
   snippets = [];
-  // requires the cache to have the document id
   const viewed_document = await invoke('load_document', { documentName: search_document })
     .catch((error) => console.log("Error caught:" + error));
   let document_name = "None";
@@ -123,6 +166,15 @@ const saveSnippet = (edit_card, id) => {
 window.onkeydown = function(e) {
   if (keybind_handler(e, "switch_menu")) {
     window.location.href = "./index.html";
+  }
+  if (keybind_handler(e, "toggle_add_snippet")) {
+    if (snippet_add.style.display === "block") {
+      snippet_add.style.display = "none";
+      snippet_input.blur();
+    } else {
+      snippet_add.style.display = "block";
+      snippet_input.focus();
+    }
   }
 }
 
