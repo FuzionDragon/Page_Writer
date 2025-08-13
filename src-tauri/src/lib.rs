@@ -170,10 +170,11 @@ async fn mark_document(document_id: i32) -> Result<(), Error> {
 }
 
 #[tauri::command]
-async fn delete_document(document_id: i32) -> Result<(), Error> {
+async fn delete_document(document_name: String) -> Result<(), Error> {
     let db = setup_db().await?;
 
-    sqlite_interface::delete_document(&db, document_id).await?;
+    println!("{}", &document_name);
+    sqlite_interface::delete_document(&db, &document_name).await?;
 
     Ok(())
 }

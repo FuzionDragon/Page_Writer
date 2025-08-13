@@ -1,4 +1,4 @@
-import { marked } from 'marked';
+import { marked, parse } from 'marked';
 import { invoke } from '@tauri-apps/api/core';
 import Fuse from "fuse.js";
 import Toastify from 'toastify-js'
@@ -52,9 +52,9 @@ const toggle_overlay = async () => {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  document.getElementById("delete_document").onclick = () => deleteDocument();
 
   if (document.body.id === "view") {
+    document.getElementById("delete_document").onclick = () => deleteDocument();
     document.getElementById("delete_current_document").onclick = () => deleteCurrentDocument();
   }
 
@@ -221,6 +221,9 @@ const editSnippet = (view_card) => {
   const edit_card = document.createElement('textarea');
   const id = view_card.id;
   const snippet = snippets.find(i => i.snippet_id === parseInt(id));
+  fuse.remove((item => {
+    item.id === parseInt(id)
+  }));
   edit_card.id = id;
   edit_card.value = snippet.raw;
   edit_card.oninput = () => {
@@ -338,7 +341,10 @@ const delete_document_bind = (e) => {
         document.getElementById("current_document").innerText = "None";
         localStorage['current_document'] = "None";
       }
-      results.pop(i => i.item === document_name);
+      results = results.filter(i => i.item !== document_name);
+      fuse.remove((item => {
+        item.title === document_name;
+      }));
       Toastify({
         text: "Moved snippet successfully to document: " + document_name,
         stopOnFocus: true,
@@ -368,7 +374,12 @@ const deleteCurrentDocument = () => {
       document.getElementById("document_name").innerText = "None";
       document.getElementById("current_document").innerText = "None";
     }
-    results.pop(i => i.item === document_name);
+    results = results.filter(i => i.item !== document_name);
+    console.log(fuse);
+    console.log(document_name);
+    fuse.remove((item => {
+      item === document_name;
+    }));
     localStorage['current_document'] = "None";
     Toastify({
       text: "Deleted current document: " + document_name,

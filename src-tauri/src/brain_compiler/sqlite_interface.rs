@@ -270,15 +270,15 @@ pub async fn delete_snippet(db: &SqlitePool, snippet_id: i32) -> Result<()> {
     Ok(())
 }
 
-pub async fn delete_document(db: &SqlitePool, document_id: i32) -> Result<()> {
+pub async fn delete_document(db: &SqlitePool, document_name: &str) -> Result<()> {
     let snippets = sqlx::query_as::<_, Snippet>(
         r#"
         SELECT snippet_id, snippet, Document.document_id, Document.document_name FROM Snippet
         JOIN Document ON Snippet.document_id == Document.document_id
-        WHERE Document.document_id = $1;
+        WHERE Document.document_name = $1;
       "#,
     )
-    .bind(document_id)
+    .bind(document_name)
     .fetch_all(db)
     .await?;
 
