@@ -70,12 +70,11 @@ pub async fn submit_snippet(
     } else {
         let first_line = snippet.lines().collect::<Vec<&str>>()[0];
         let marked_document = sqlite_interface::fetch_marked_document(db).await?;
-        let latest_document = sqlite_interface::fetch_latest_document(db).await?;
 
         if let Some(marked_document) = marked_document {
             let document_id = sqlite_interface::add_document(
                 db,
-                &marked_document.document_name,
+                &marked_document,
                 snippet,
                 input_tfidf_data.clone(),
                 input_rake_data.clone(),
@@ -84,6 +83,8 @@ pub async fn submit_snippet(
 
             return Ok(Some(document_id));
         }
+
+        let latest_document = sqlite_interface::fetch_latest_document(db).await?;
 
         let scores = combined_similarity_scores(
             input_tfidf_data.clone(),

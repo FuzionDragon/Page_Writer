@@ -144,6 +144,16 @@ textarea {
   bottom: 0;
 }
 
+#bottomcenternav {
+  @include nav;
+  bottom: 0;
+  text-align: center;
+  justify-content: center;
+  align-content: center;
+  align-right: auto;
+  align-left: auto;
+}
+
 #submit_snippet_overlay{
   @include nav;
   right: auto;
@@ -181,6 +191,7 @@ textarea {
 
 #view {
   text-align: left;
+  padding: 2em;
 }
 
 .card {
@@ -323,6 +334,10 @@ textarea {
     bottom: auto;
   }
   #bottomleftnav {
+    top: 0;
+    bottom: auto;
+  }
+  #bottomcenternav {
     top: 0;
     bottom: auto;
   }

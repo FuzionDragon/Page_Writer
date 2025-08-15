@@ -148,7 +148,7 @@ async fn move_snippet(snippet_id: i32, document_id: i32) -> Result<(), Error> {
 }
 
 #[tauri::command]
-async fn fetch_marked_document() -> Result<Option<DocumentSnippets>, Error> {
+async fn fetch_marked_document() -> Result<Option<String>, Error> {
     let db = setup_db().await?;
 
     let marked_document = sqlite_interface::fetch_marked_document(&db).await?;
@@ -161,10 +161,10 @@ async fn fetch_marked_document() -> Result<Option<DocumentSnippets>, Error> {
 }
 
 #[tauri::command]
-async fn mark_document(document_id: i32) -> Result<(), Error> {
+async fn mark_document(document_name: String) -> Result<(), Error> {
     let db = setup_db().await?;
 
-    sqlite_interface::set_marked_document(&db, document_id).await?;
+    sqlite_interface::set_marked_document(&db, &document_name).await?;
 
     Ok(())
 }

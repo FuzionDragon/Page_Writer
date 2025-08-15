@@ -6,15 +6,6 @@ import Toastify from 'toastify-js'
 
 let snippets = [];
 document.addEventListener('DOMContentLoaded', async () => {
-  const marked_document = await invoke('fetch_marked_document')
-    .catch((error) => console.log("Error caught:" + error));
-
-  if (marked_document === null) {
-    document.getElementById('marked_document').innerText = "None";
-  } else {
-    document.getElementById('marked_document').innerText = marked_document.document_name;
-  }
-
   if (localStorage['current_document'] === null || localStorage['current_document'] === undefined) {
     localStorage['current_document'] = "None";
   }
@@ -27,6 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 const snippet_add = document.getElementById('snippet-add');
+document.getElementById('add_snippet_toggle').onclick = () => toggle_add_snippet();
 
 document.getElementById('submit-snippet').onclick = () => submit();
 const snippet_input = document.getElementById('snippet-input');
@@ -163,18 +155,22 @@ const saveSnippet = (edit_card, id) => {
   toggle_overlay();
 }
 
+const toggle_add_snippet = () => {
+  if (snippet_add.style.display === "block") {
+    snippet_add.style.display = "none";
+    snippet_input.blur();
+  } else {
+    snippet_add.style.display = "block";
+    snippet_input.focus();
+  }
+}
+
 window.onkeydown = function(e) {
   if (keybind_handler(e, "switch_menu")) {
     window.location.href = "./index.html";
   }
   if (keybind_handler(e, "toggle_add_snippet")) {
-    if (snippet_add.style.display === "block") {
-      snippet_add.style.display = "none";
-      snippet_input.blur();
-    } else {
-      snippet_add.style.display = "block";
-      snippet_input.focus();
-    }
+    toggle_add_snippet();
   }
 }
 

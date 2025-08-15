@@ -52,6 +52,16 @@ const toggle_overlay = async () => {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  invoke('fetch_marked_document')
+    .then((marked_document) => {
+      console.log(marked_document);
+      if (marked_document === null) {
+        document.getElementById('marked_document').innerText = "None";
+      } else {
+        document.getElementById('marked_document').innerText = marked_document;
+      }
+    })
+    .catch((error) => console.log("Error after fetch_marked_document caught: " + error));
 
   if (document.body.id === "view") {
     document.getElementById("delete_document").onclick = () => deleteDocument();

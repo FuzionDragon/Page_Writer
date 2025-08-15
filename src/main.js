@@ -5,17 +5,6 @@ import { keybind_handler } from './config';
 const snippet_input = document.getElementById('snippet-input');
 const title_input = document.getElementById('title-input');
 
-document.addEventListener("DOMContentLoaded", async () => {
-  const marked_document = await invoke('fetch_marked_document')
-    .catch((error) => console.log("Error caught:" + error));
-
-  if (marked_document === null) {
-    document.getElementById('marked_document').innerText = "None";
-  } else {
-    document.getElementById('marked_document').innerText = marked_document.document_name;
-  }
-})
-
 const submit = function() {
   invoke('submit', { snippet: snippet_input.value, title: title_input.value })
     .then(() => {

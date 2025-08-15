@@ -393,46 +393,33 @@ pub async fn move_snippet(db: &SqlitePool, snippet_id: i32, document_id: i32) ->
     Ok(())
 }
 
-pub async fn set_marked_document(db: &SqlitePool, document_id: i32) -> Result<()> {
+pub async fn set_marked_document(db: &SqlitePool, document_name: &str) -> Result<()> {
     sqlx::query("UPDATE Document SET is_marked = NULL WHERE is_marked = 1;")
         .execute(db)
         .await?;
 
-    sqlx::query("UPDATE Document SET is_marked = 1 WHERE document_id = $1;")
-        .bind(document_id)
+    sqlx::query("UPDATE Document SET is_marked = 1 WHERE document_name = $1;")
+        .bind(document_name)
         .execute(db)
         .await?;
 
     Ok(())
 }
 
-pub async fn fetch_marked_document(db: &SqlitePool) -> Result<Option<DocumentSnippets>> {
-    let snippets = sqlx::query_as::<_, Snippet>(
+pub async fn fetch_marked_document(db: &SqlitePool) -> Result<Option<String>> {
+    let marked_document = sqlx::query_as::<_, Document>(
         r#"
-        SELECT snippet_id, snippet, Document.document_name FROM Snippet
-        JOIN Document ON Snippet.document_id == Document.document_id
-        WHERE Document.is_marked = 1;
+        SELECT document_id, document_name FROM Document
+        WHERE is_marked = 1;
       "#,
     )
-    .fetch_all(db)
+    .fetch_optional(db)
     .await?;
 
-    if snippets.is_empty() {
-        Ok(None)
+    if let Some(marked_document) = marked_document {
+        Ok(Some(marked_document.document_name))
     } else {
-        let all_snippets: Vec<SnippetEntry> = snippets
-            .iter()
-            .map(|v| SnippetEntry {
-                snippet_id: v.snippet_id,
-                snippet: v.snippet.clone(),
-            })
-            .collect();
-        let page_document = DocumentSnippets {
-            document_id: snippets[0].document_id,
-            document_name: snippets[0].document_name.clone(),
-            snippets: all_snippets,
-        };
-        Ok(Some(page_document))
+        Ok(None)
     }
 }
 
