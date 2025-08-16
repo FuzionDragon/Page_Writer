@@ -94,14 +94,16 @@ async fn load_settings() -> Result<Option<Settings>, Error> {
 }
 
 #[tauri::command]
-async fn submit(snippet: String, title: String) -> Result<Option<i32>, Error> {
+async fn submit(snippet: String, title: String) -> Result<(), Error> {
     let db = setup_db().await?;
 
     if title.is_empty() {
-        Ok(submit_snippet(&snippet, None, &db).await?)
+        submit_snippet(&snippet, None, &db).await?;
     } else {
-        Ok(submit_snippet(&snippet, Some(&title), &db).await?)
+        submit_snippet(&snippet, Some(&title), &db).await?;
     }
+
+    Ok(())
 }
 
 #[tauri::command]

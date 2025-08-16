@@ -12,11 +12,11 @@ They are currently pieces of markdown which is stored in a Sqlite database, **ho
 
 - Fuzzy finder used for selecting, marking and deleting your documents, powered by Fuse.js.
 
-- The user has the ability to quickly and easily merge notes with a specific document by simply giving a name of an existing document, if it doesn't exist then a document with the corresponding name will be created.
+- The user has the ability to quickly and easily assign notes to a specific document by simply giving a name of an existing document, if it doesn't exist then a document with the corresponding name will be created.
 
-- Notes without an entered name will merge or create a new document automatically by Page-Writer by using numerous algorithms against the existing documents and notes to make a decision. **(this feature currently will have varying results if the database is too small, so for the best results only use this feature when there is a reasonable population of documents and notes)**
+- Allows the user to mark a document, making all untitled snippets automatically assign themselves to the marked document.
 
-- Interactive document view page with the ability to update, delete and move individual snippets.
+- Interactive document view page with the ability to add, update, delete and move individual snippets.
 
 - Built using Tauri with vanilla Javascript, Scss for the frontend and Rust as a backend.
 
@@ -47,8 +47,6 @@ Settings? : Escape
 ### TODO
 
 - Windows support (no plans for Ios or MAC as of writing).
-
-- Snippet submission menu on the view page (just with merging to current document).
 
 - Shortcuts menu.
 
