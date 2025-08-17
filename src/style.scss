@@ -54,6 +54,7 @@ html {
 body {
   max-width: 80%;
   padding-top: 6em;
+  padding: 4em;
   text-align: center;
   margin: auto;
   min-width: 320px;
@@ -72,15 +73,6 @@ button {
   }
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-h3 {
-  font-size: 1.2em;
-}
-
 a {
   font-weight: 500;
   color: light-dark($background-color, $foreground-color);
@@ -96,7 +88,7 @@ textarea {
   color: light-dark($background-color, $foreground-color);
   background-color: light-dark($foreground-color, $background-color);
   font-size: 1.2em;
-  width: 80%;
+  width: 100%;
   resize: none;
   outline: none;
   overflow: hidden;
@@ -162,7 +154,7 @@ textarea {
 }
 
 #title-input {
-  font-size: 1.6em;
+  font-size: 1.4em;
 }
 
 #document-input {
@@ -191,7 +183,6 @@ textarea {
 
 #view {
   text-align: left;
-  padding: 2em;
 }
 
 .card {
@@ -315,6 +306,7 @@ textarea {
 @media (max-width: $mediaMaxWidth) {
   body {
     padding-top: 2em;
+    padding: 2em;
     width: 100%;
   }
   #rightnav {
