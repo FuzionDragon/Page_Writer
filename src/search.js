@@ -68,6 +68,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById("delete_current_document").onclick = () => deleteCurrentDocument();
   }
 
+  if (document.body.id === "submit") {
+    document.getElementById("search_document").onclick = () => searchDocument();
+  }
+
   const corpus = await invoke('load_snippets')
     .catch((error) => console.log("error caught:" + error));
 
@@ -78,6 +82,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     threshold: 0.4
   });
 })
+
+const searchDocument = () => {
+  toggle_picker();
+  current_action.innerText = "Search Document";
+  input.onkeydown = (e) => search_document_bind(e);
+}
+
+const search_document_bind = (e) => {
+  if (e.key === "Enter") {
+    if (results.length > 0 && Array.isArray(results)) {
+      const document_name = results[0].item;
+      document.getElementById("title-input").value = document_name;
+      document.getElementById("snippet-input").focus();
+    }
+    toggle_picker();
+    input.value = "";
+  }
+}
 
 document.oninput = function(e) {
   document_list.innerHTML = '';
@@ -199,7 +221,6 @@ const update_view = async (search_document) => {
   snippet_container.innerHTML = "";
 
   let document_name = "None";
-  console.log(search_document);
   const viewed_document = await invoke('load_document', { documentName: search_document })
     .catch((error) => console.log("Error caught:" + error));
 
