@@ -116,6 +116,11 @@ document.oninput = function(e) {
 };
 
 document.onkeydown = function(e) {
+  if (document.body.id === "submit" && keybind_handler(e, "search_document")) {
+    toggle_picker();
+    current_action.innerText = "Search Document";
+    input.onkeydown = (e) => search_document_bind(e);
+  }
   if (keybind_handler(e, "marked_document_picker")) {
     toggle_picker();
     current_action.innerText = "Mark Document";

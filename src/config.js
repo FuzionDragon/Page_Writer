@@ -51,6 +51,8 @@ export const keybind_handler = (e, command) => {
         return (e.ctrlKey && e.key === "t")
       case "submit_snippet":
         return (e.ctrlKey && e.key === "Enter")
+      case "search_document":
+        return (e.ctrlKey && e.key === "f")
       case "current_document_picker":
         console.log("current_document_picker");
         return (e.ctrlKey && e.key === "e")
