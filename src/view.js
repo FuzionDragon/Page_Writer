@@ -10,7 +10,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     localStorage['current_document'] = "None";
   }
 
-  document.getElementById('current_document').innerText = localStorage['current_document'];
+  const current_document = localStorage['current_document'];
+  if (current_document.length >= 8) {
+    const short_name = current_document.substring(0, 6) + "..";
+    document.getElementById('current_document').innerText = short_name;
+  } else {
+    document.getElementById('current_document').innerText = current_document;
+  }
 
   if (localStorage['current_document'] !== "None") {
     renderView(localStorage['current_document']);
@@ -108,8 +114,15 @@ const editSnippet = (view_card) => {
   const snippet = snippets.find(i => i.snippet_id === parseInt(id));
   edit_card.id = id;
   edit_card.value = snippet.raw;
+  edit_card.style.overflowY = "hidden";
+
+  setTimeout(() => {
+    edit_card.style.height = 'auto';
+    edit_card.style.height = edit_card.scrollHeight + 'px';
+  }, 10);
+
   edit_card.oninput = () => {
-    edit_card.style.height = "";
+    edit_card.style.height = "auto";
     edit_card.style.height = edit_card.scrollHeight + "px";
   }
 

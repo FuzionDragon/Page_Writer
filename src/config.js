@@ -1,12 +1,33 @@
 import { invoke } from '@tauri-apps/api/core';
 import Toastify from 'toastify-js'
 
+const default_bindings = {
+  "switch_menu": "Ctrl+t",
+  "submit_snippet": "Ctrl+Enter",
+  "search_document": "Ctrl+f",
+  "current_document_picker": "Ctrl+e",
+  "marked_document_picker": "Ctrl+r",
+  "delete_document_picker": "Ctrl+d",
+  "delete_current_document": "Ctrl+Delete",
+  "delete_selected_snippet": "Delete",
+  "move_selected_snippet": "Ctrl+f",
+  "update_selected_snippet": "Ctrl+Enter",
+  "toggle_add_snippet": "Ctrl+q",
+  "add_snippet": "Ctrl+Enter",
+  "toggle_shortcuts_menu": "Ctrl+h"
+};
+
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("running config script");
-  if (localStorage["keybinds"] === undefined) {
+  if (localStorage["keybinds"] === undefined || localStorage["keybinds"] === null) {
+    console.log("Setting keybinds");
     invoke('load_keybindings')
       .then((keybindings) => {
-        localStorage['keybinds'] = keybindings;
+        if (keybindings !== null) {
+          localStorage['keybinds'] = JSON.stringify(keybindings);
+        } else {
+          localStorage["keybinds"] = JSON.stringify(default_bindings);
+        }
       })
       .catch((error) => {
         console.log("Error found: " + error);
@@ -25,7 +46,46 @@ document.addEventListener("DOMContentLoaded", async () => {
       position: "center"
     }).showToast();
   }
+
+  render_shortcuts_menu();
 })
+
+const render_shortcuts_menu = () => {
+  const menu = document.createElement('div');
+  menu.id = "shortcuts-menu";
+  menu.className = "container";
+  menu.style.display = "none";
+  const shortcuts_title = document.createElement('h2');
+  shortcuts_title.innerText = "Shortcuts";
+  shortcuts_title.style.width = "100%";
+  menu.appendChild(shortcuts_title);
+  document.getElementById("navbar").appendChild(menu);
+
+  const data = localStorage.getItem("keybinds");
+  let keybinds = data ? JSON.parse(data) : {};
+
+  for (const [key, value] of Object.entries(keybinds)) {
+    const card = document.createElement("div");
+    card.className = "card";
+    const title = document.createElement("h3");
+    title.innerText = key;
+    const binding = document.createElement("p");
+    binding.innerText = value;
+    card.appendChild(title);
+    card.appendChild(binding);
+    menu.appendChild(card)
+  }
+}
+
+export const toggle_shortcuts_menu = () => {
+  console.log("toggle_shortcuts_menu")
+  const menu = document.getElementById("shortcuts-menu");
+  if (menu.style.display === "flex") {
+    menu.style.display = "none";
+  } else {
+    menu.style.display = "flex";
+  }
+}
 
 const parse_keybind = (keybind) => {
   const parts = keybind.split('+').map(part => part.trim());
@@ -42,46 +102,64 @@ const parse_keybind = (keybind) => {
 }
 
 export const keybind_handler = (e, command) => {
-  const keybinds = localStorage["keybinds"];
+  const data = localStorage.getItem("keybinds");
+  let keybinds = data ? JSON.parse(data) : {};
   if ((keybinds[command] === undefined) || (keybinds[command] === null)) {
-    console.log("keybind not found");
-
     switch (command) {
       case "switch_menu":
+        keybinds["switch_menu"] = default_bindings["switch_menu"];
+        localStorage.setItem("keybinds", JSON.stringify(keybinds));
         return (e.ctrlKey && e.key === "t")
       case "submit_snippet":
+        keybinds["submit_snippet"] = default_bindings["submit_snippet"];
+        localStorage.setItem("keybinds", JSON.stringify(keybinds));
         return (e.ctrlKey && e.key === "Enter")
       case "search_document":
+        keybinds["search_document"] = default_bindings["search_document"];
+        localStorage.setItem("keybinds", JSON.stringify(keybinds));
         return (e.ctrlKey && e.key === "f")
       case "current_document_picker":
-        console.log("current_document_picker");
+        keybinds["current_document_picker"] = default_bindings["current_document_picker"];
+        localStorage.setItem("keybinds", JSON.stringify(keybinds));
         return (e.ctrlKey && e.key === "e")
       case "marked_document_picker":
-        console.log("marked_document_picker");
+        keybinds["marked_document_picker"] = default_bindings["marked_document_picker"];
+        localStorage.setItem("keybinds", JSON.stringify(keybinds));
         return (e.ctrlKey && e.key === "r")
       case "delete_document_picker":
-        console.log("delete_document_picker");
+        keybinds["delete_document_picker"] = default_bindings["delete_document_picker"];
+        localStorage.setItem("keybinds", JSON.stringify(keybinds));
         return (e.ctrlKey && e.key === "d")
       case "delete_current_document":
-        console.log("delete_current_document");
-        return (e.ctrlKey && e.key === "Del")
+        keybinds["delete_current_document"] = default_bindings["delete_current_document"];
+        localStorage.setItem("keybinds", JSON.stringify(keybinds));
+        return (e.ctrlKey && e.key === "Delete")
       case "move_selected_snippet":
-        console.log("move_selected_snippet");
+        keybinds["move_selected_snippet"] = default_bindings["move_selected_snippet"];
+        localStorage.setItem("keybinds", JSON.stringify(keybinds));
         return (e.ctrlKey && e.key === "f")
       case "delete_selected_snippet":
-        console.log("delete_selected_snippet");
-        return (e.key === "Del")
+        keybinds["delete_selected_snippet"] = default_bindings["delete_selected_snippet"];
+        localStorage.setItem("keybinds", JSON.stringify(keybinds));
+        return (e.key === "Delete")
       case "update_selected_snippet":
-        console.log("update_selected_snippet");
+        keybinds["update_selected_snippet"] = default_bindings["update_selected_snippet"];
+        localStorage.setItem("keybinds", JSON.stringify(keybinds));
         return (e.ctrlKey && e.key === "Enter")
       case "toggle_add_snippet":
-        console.log("toggle_add_snippet");
+        keybinds["toggle_add_snippet"] = default_bindings["toggle_add_snippet"];
+        localStorage.setItem("keybinds", JSON.stringify(keybinds));
         return (e.ctrlKey && e.key === "q")
       case "add_snippet":
-        console.log("add_snippet");
+        keybinds["add_snippet"] = default_bindings["add_snippet"];
+        localStorage.setItem("keybinds", JSON.stringify(keybinds));
         return (e.ctrlKey && e.key === "Enter")
+      case "toggle_shortcuts_menu":
+        console.log("Pressed toggle_shortcuts_menu")
+        keybinds["toggle_shortcuts_menu"] = default_bindings["toggle_shortcuts_menu"];
+        localStorage.setItem("keybinds", JSON.stringify(keybinds));
+        return (e.ctrlKey && e.key === "h")
       default:
-        console.log("Command not found");
         break;
     }
   } else {

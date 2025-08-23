@@ -21,6 +21,20 @@ $mediaMaxWidth: 520px;
   overflow-x: hidden;
 }
 
+@mixin menu {
+  @include border;
+  position: fixed;
+  z-index: 4;
+  overflow-x: hidden;
+  width: 80%;
+  height: 80%;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-content: flex-start;
+  text-align: center;
+  top: 10%;
+}
+
 @mixin nav {
   @include border;
   margin: 1em;
@@ -92,6 +106,8 @@ textarea {
   resize: none;
   outline: none;
   overflow: hidden;
+  overflow-y: scroll;
+  transition: height 0.2s ease;
 }
 
 #leftnav {
@@ -197,13 +213,27 @@ textarea {
 
 #view {
   text-align: left;
+  padding-bottom: 4em;
+
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+  }
+}
+
+#shortcuts-menu {
+  @include menu;
+  display: hidden;
 }
 
 .card {
   @include border;
-  margin: 2em;
-  padding: 2em;
-  max-width: 20em;
+  margin: 1em;
+  padding: 1em;
+  max-width: 15em;
   min-width: 20%;
 }
 
@@ -238,13 +268,14 @@ textarea {
 .overlay-snippet-input {
   @include overlay;
   @include border;
-  margin: 4em;
   top: 20%;
   justify-content: center;
+  width: 60%;
+  height: 50%;
   align-content: center;
   align-items: center;
   text-align: center;
-  padding: 0.5em;
+  padding: 1em;
   display: none;
 }
 

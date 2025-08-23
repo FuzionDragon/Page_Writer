@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import Fuse from "fuse.js";
 import Toastify from 'toastify-js'
 
-import { keybind_handler } from './config';
+import { keybind_handler, toggle_shortcuts_menu } from './config';
 
 const picker_container = document.createElement('div');
 picker_container.id = "picker_container";
@@ -58,7 +58,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (marked_document === null) {
         document.getElementById('marked_document').innerText = "None";
       } else {
-        document.getElementById('marked_document').innerText = marked_document;
+        if (marked_document.length >= 8) {
+          const short_name = marked_document.substring(0, 6) + "..";
+          document.getElementById('marked_document').innerText = short_name;
+        } else {
+          document.getElementById('marked_document').innerText = marked_document;
+        }
       }
     })
     .catch((error) => console.log("Error after fetch_marked_document caught: " + error));
@@ -130,6 +135,10 @@ document.onkeydown = function(e) {
     toggle_picker();
     current_action.innerText = "Set Current Document";
     input.onkeydown = (e) => load_document_bind(e);
+  }
+  if (keybind_handler(e, "toggle_shortcuts_menu")) {
+    console.log("Toggling shortcuts-menu");
+    toggle_shortcuts_menu();
   }
 }
 
@@ -262,8 +271,16 @@ const editSnippet = (view_card) => {
   }));
   edit_card.id = id;
   edit_card.value = snippet.raw;
+  edit_card.style.overflowY = "hidden";
+
+  setTimeout(() => {
+    edit_card.style.height = 'auto';
+    edit_card.style.height = edit_card.scrollHeight + 'px';
+  }, 10);
+
   edit_card.oninput = () => {
-    edit_card.style.height = "";
+    console.log(edit_card.scrollHeight);
+    edit_card.style.height = "auto";
     edit_card.style.height = edit_card.scrollHeight + "px";
   }
 

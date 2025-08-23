@@ -16,6 +16,7 @@ pub struct Settings {
 pub struct Keybindings {
     pub switch_menu: Option<String>,
     pub submit_snippet: Option<String>,
+    pub search_document: Option<String>,
     pub current_document_picker: Option<String>,
     pub marked_document_picker: Option<String>,
     pub delete_document_picker: Option<String>,
@@ -23,6 +24,9 @@ pub struct Keybindings {
     pub move_selected_snippet: Option<String>,
     pub delete_selected_snippet: Option<String>,
     pub update_selected_snippet: Option<String>,
+    pub toggle_add_snippet: Option<String>,
+    pub add_snippet: Option<String>,
+    pub toggle_shortcuts_menu: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
