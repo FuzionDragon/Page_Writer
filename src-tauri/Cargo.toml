@@ -24,6 +24,8 @@ dirs = "6.0.0"
 anyhow = "1.0.98"
 thiserror = "2.0.12"
 toml = "0.9.4"
+simple-server = "0.4.0"
+local-ip-address = "0.6.5"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

@@ -5,6 +5,10 @@ import { keybind_handler } from './config';
 const snippet_input = document.getElementById('snippet-input');
 const title_input = document.getElementById('title-input');
 
+document.addEventListener('DOMContentLoaded', async () => {
+  title_input.focus();
+});
+
 const submit = function() {
   invoke('submit', { snippet: snippet_input.value, title: title_input.value })
     .then(() => {
@@ -50,6 +54,13 @@ snippet_input.onkeydown = function(e) {
 }
 
 window.onkeydown = function(e) {
+  Toastify({
+    text: "Keydown: " + e.key,
+    stopOnFocus: true,
+    gravity: "bottom",
+    position: "center"
+  }).showToast()
+
   if (keybind_handler(e, "submit_snippet")) {
     submit();
   }

@@ -2,19 +2,19 @@ import { invoke } from '@tauri-apps/api/core';
 import Toastify from 'toastify-js'
 
 const default_bindings = {
-  "switch_menu": "Ctrl+t",
-  "submit_snippet": "Ctrl+Enter",
-  "search_document": "Ctrl+f",
-  "current_document_picker": "Ctrl+e",
-  "marked_document_picker": "Ctrl+r",
-  "delete_document_picker": "Ctrl+d",
-  "delete_current_document": "Ctrl+Delete",
+  "switch_menu": "Control+t",
+  "submit_snippet": "Control+Enter",
+  "search_document": "Control+f",
+  "current_document_picker": "Control+e",
+  "marked_document_picker": "Control+r",
+  "delete_document_picker": "Control+d",
+  "delete_current_document": "Control+Delete",
   "delete_selected_snippet": "Delete",
-  "move_selected_snippet": "Ctrl+f",
-  "update_selected_snippet": "Ctrl+Enter",
-  "toggle_add_snippet": "Ctrl+q",
-  "add_snippet": "Ctrl+Enter",
-  "toggle_shortcuts_menu": "Ctrl+h"
+  "move_selected_snippet": "Control+f",
+  "update_selected_snippet": "Control+Enter",
+  "toggle_add_snippet": "Control+q",
+  "add_snippet": "Control+Enter",
+  "toggle_shortcuts_menu": "Control+h"
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -25,8 +25,20 @@ document.addEventListener("DOMContentLoaded", async () => {
       .then((keybindings) => {
         if (keybindings !== null) {
           localStorage['keybinds'] = JSON.stringify(keybindings);
+          Toastify({
+            text: "Keybinds loaded from config",
+            stopOnFocus: true,
+            gravity: "bottom",
+            position: "center"
+          }).showToast();
         } else {
           localStorage["keybinds"] = JSON.stringify(default_bindings);
+          Toastify({
+            text: "Keybinds loaded from default_bindings",
+            stopOnFocus: true,
+            gravity: "bottom",
+            position: "center"
+          }).showToast();
         }
       })
       .catch((error) => {
@@ -88,12 +100,19 @@ export const toggle_shortcuts_menu = () => {
 }
 
 const parse_keybind = (keybind) => {
+  Toastify({
+    text: "Parsing keybind: " + keybind,
+    stopOnFocus: true,
+    gravity: "bottom",
+    position: "center"
+  }).showToast();
+
   const parts = keybind.split('+').map(part => part.trim());
   const modifiers = parts.slice(0, -1);
   const key = parts[parts.length - 1];
 
   return {
-    ctrl: modifiers.includes('Ctrl'),
+    ctrl: modifiers.includes('Control'),
     shift: modifiers.includes('Shift'),
     alt: modifiers.includes('Alt'),
     meta: modifiers.includes('Meta'),
@@ -104,6 +123,12 @@ const parse_keybind = (keybind) => {
 export const keybind_handler = (e, command) => {
   const data = localStorage.getItem("keybinds");
   let keybinds = data ? JSON.parse(data) : {};
+  Toastify({
+    text: "handing command: " + command + "checking binding: " + e,
+    stopOnFocus: true,
+    gravity: "bottom",
+    position: "center"
+  }).showToast();
   if ((keybinds[command] === undefined) || (keybinds[command] === null)) {
     switch (command) {
       case "switch_menu":

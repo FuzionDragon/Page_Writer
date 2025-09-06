@@ -3,6 +3,7 @@ use std::fs;
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 
 mod brain_compiler;
+mod client_server;
 mod config;
 use brain_compiler::{submit_snippet, update_snippet};
 
@@ -11,7 +12,7 @@ use crate::{
     config::{Keybindings, Settings},
 };
 
-const DATA_PATH: &str = "PageWriter/data.db";
+pub const DATA_PATH: &str = "PageWriter/data.db";
 const ANDROID_APP_NAME: &str = "com.davidl.page_writer";
 
 #[derive(Debug, thiserror::Error)]
@@ -33,7 +34,7 @@ impl serde::Serialize for Error {
     }
 }
 
-fn get_android_path() -> Result<String, Error> {
+pub fn get_android_path() -> Result<String, Error> {
     let data_path = format!("{}/{}/{}", "/data/data", ANDROID_APP_NAME, "files");
     fs::create_dir_all(&data_path)?;
 

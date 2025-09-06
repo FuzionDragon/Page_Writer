@@ -131,7 +131,7 @@ document.onkeydown = function(e) {
     current_action.innerText = "Mark Document";
     input.onkeydown = (e) => mark_document_bind(e);
   }
-  if (keybind_handler(e, "current_document_picker")) {
+  if (document.body.id === "view" && keybind_handler(e, "current_document_picker")) {
     toggle_picker();
     current_action.innerText = "Set Current Document";
     input.onkeydown = (e) => load_document_bind(e);
@@ -158,6 +158,7 @@ if (document.body.id === "view") {
 
 const load_document_bind = (e) => {
   if (e.key === "Enter") {
+    e.preventDefault();
     if (results.length > 0 && Array.isArray(results)) {
       const document_name = results[0].item;
       document.getElementById("current_document").innerText = document_name;
@@ -185,11 +186,25 @@ const load_document_bind = (e) => {
 }
 
 const mark_document_bind = (e) => {
-  if (e.key === "Enter") {
+  if (e.key === "Enter" || e.key === "Go") {
+    e.preventDefault();
     if (results.length > 0 && Array.isArray(results)) {
       const document_name = results[0].item;
-      invoke("mark_document", { documentName: document_name });
-      document.getElementById("marked_document").innerText = document_name;
+      invoke("mark_document", { documentName: document_name })
+        .catch((error) => {
+          Toastify({
+            text: "Error marking the document: " + error,
+            stopOnFocus: true,
+            gravity: "bottom",
+            position: "center"
+          }).showToast();
+        });
+      if (document_name.length >= 8) {
+        const short_name = document_name.substring(0, 6) + "..";
+        document.getElementById('marked_document').innerText = short_name;
+      } else {
+        document.getElementById('marked_document').innerText = document_name;
+      }
       Toastify({
         text: "Set marked document to: " + document_name,
         stopOnFocus: true,
@@ -211,14 +226,21 @@ const mark_document_bind = (e) => {
 
 let snippets = [];
 const update_view = async (search_document) => {
-  const marked_document = await invoke('fetch_marked_document')
-    .catch((error) => console.log("Error caught:" + error));
-
-  if (marked_document === null) {
-    document.getElementById('marked_document').innerText = "None";
-  } else {
-    document.getElementById('marked_document').innerText = marked_document.document_name;
-  }
+  invoke('fetch_marked_document')
+    .then((marked_document) => {
+      console.log(marked_document);
+      if (marked_document === null) {
+        document.getElementById('marked_document').innerText = "None";
+      } else {
+        if (marked_document.length >= 8) {
+          const short_name = marked_document.substring(0, 6) + "..";
+          document.getElementById('marked_document').innerText = short_name;
+        } else {
+          document.getElementById('marked_document').innerText = marked_document;
+        }
+      }
+    })
+    .catch((error) => console.log("Error after fetch_marked_document caught: " + error));
 
   if (localStorage['current_document'] === null || localStorage['current_document'] === undefined) {
     localStorage['current_document'] = "None";
@@ -251,6 +273,12 @@ const update_view = async (search_document) => {
   }
 
   document.getElementById("document_name").innerText = document_name;
+  if (document_name.length >= 8) {
+    const short_name = document_name.substring(0, 6) + "..";
+    document.getElementById('current_document').innerText = short_name;
+  } else {
+    document.getElementById('current_document').innerText = document_name;
+  }
 
   for (const snippet of snippets.entries()) {
     const view_card = document.createElement('div');

@@ -13,7 +13,8 @@ export default {
     rollupOptions: {
       input: {
         index: path.resolve(__dirname, 'src/index.html'),
-        view: path.resolve(__dirname, 'src/view.html')
+        view: path.resolve(__dirname, 'src/view.html'),
+        config: path.resolve(__dirname, 'src/config.js')
       }
     }
   }
