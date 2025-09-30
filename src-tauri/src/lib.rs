@@ -3,7 +3,7 @@ use std::fs;
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 
 mod brain_compiler;
-mod client_server;
+//mod client_server;
 mod config;
 use brain_compiler::{submit_snippet, update_snippet};
 

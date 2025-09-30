@@ -179,12 +179,12 @@ const toggle_add_snippet = () => {
 }
 
 window.onkeydown = function(e) {
-  Toastify({
-    text: "Keydown: " + e.key,
-    stopOnFocus: true,
-    gravity: "bottom",
-    position: "center"
-  }).showToast()
+//  Toastify({
+//    text: "Keydown: " + e.key,
+//    stopOnFocus: true,
+//    gravity: "bottom",
+//    position: "center"
+//  }).showToast()
   if (keybind_handler(e, "switch_menu")) {
     window.location.href = "./index.html";
   }

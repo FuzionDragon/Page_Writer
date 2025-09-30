@@ -54,12 +54,12 @@ snippet_input.onkeydown = function(e) {
 }
 
 window.onkeydown = function(e) {
-  Toastify({
-    text: "Keydown: " + e.key,
-    stopOnFocus: true,
-    gravity: "bottom",
-    position: "center"
-  }).showToast()
+//  Toastify({
+//    text: "Keydown: " + e.key,
+//    stopOnFocus: true,
+//    gravity: "bottom",
+//    position: "center"
+//  }).showToast()
 
   if (keybind_handler(e, "submit_snippet")) {
     submit();

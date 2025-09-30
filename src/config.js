@@ -100,12 +100,12 @@ export const toggle_shortcuts_menu = () => {
 }
 
 const parse_keybind = (keybind) => {
-  Toastify({
-    text: "Parsing keybind: " + keybind,
-    stopOnFocus: true,
-    gravity: "bottom",
-    position: "center"
-  }).showToast();
+//  Toastify({
+//    text: "Parsing keybind: " + keybind,
+//    stopOnFocus: true,
+//    gravity: "bottom",
+//    position: "center"
+//  }).showToast();
 
   const parts = keybind.split('+').map(part => part.trim());
   const modifiers = parts.slice(0, -1);
@@ -123,12 +123,12 @@ const parse_keybind = (keybind) => {
 export const keybind_handler = (e, command) => {
   const data = localStorage.getItem("keybinds");
   let keybinds = data ? JSON.parse(data) : {};
-  Toastify({
-    text: "handing command: " + command + "checking binding: " + e,
-    stopOnFocus: true,
-    gravity: "bottom",
-    position: "center"
-  }).showToast();
+//  Toastify({
+//    text: "handing command: " + command + "checking binding: " + e,
+//    stopOnFocus: true,
+//    gravity: "bottom",
+//    position: "center"
+//  }).showToast();
   if ((keybinds[command] === undefined) || (keybinds[command] === null)) {
     switch (command) {
       case "switch_menu":
