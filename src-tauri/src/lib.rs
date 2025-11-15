@@ -142,10 +142,10 @@ async fn print(text: String) -> Result<(), Error> {
 }
 
 #[tauri::command]
-async fn move_snippet(snippet_id: i32, document_id: i32) -> Result<(), Error> {
+async fn move_snippet(snippet_id: i32, document_name: String) -> Result<(), Error> {
     let db = setup_db().await?;
 
-    sqlite_interface::move_snippet(&db, snippet_id, document_id).await?;
+    sqlite_interface::move_snippet(&db, snippet_id, &document_name).await?;
 
     Ok(())
 }

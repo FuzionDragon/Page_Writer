@@ -369,6 +369,12 @@ const moveSnippet = (edit_card, id) => {
 
 export const move_document_bind = (e, id, edit_card) => {
   if (e.key === "Enter") {
+    Toastify({
+      text: "Moved document bind",
+      stopOnFocus: true,
+      gravity: "bottom",
+      position: "center"
+    }).showToast()
     if (results.length > 0 && Array.isArray(results)) {
       snippets.pop(i => i.snippet_id === parseInt(id));
       const document_name = results[0].item;

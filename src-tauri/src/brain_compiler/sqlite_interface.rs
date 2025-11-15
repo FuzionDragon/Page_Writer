@@ -203,9 +203,18 @@ pub async fn update_snippet(db: &SqlitePool, snippet_id: i32, new_snippet: &str)
     Ok(())
 }
 
-pub async fn move_snippet(db: &SqlitePool, snippet_id: i32, document_id: i32) -> Result<()> {
+pub async fn move_snippet(db: &SqlitePool, snippet_id: i32, document_name: &str) -> Result<()> {
+    println!("{snippet_id}");
+    println!("{document_name}");
+    let document_row = sqlx::query_as::<_, Document>(
+        "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
+    )
+    .bind(document_name)
+    .fetch_one(db)
+    .await?;
+
     sqlx::query("UPDATE Snippet SET document_id = $1 WHERE snippet_id = $2;")
-        .bind(document_id)
+        .bind(document_row.document_id)
         .bind(snippet_id)
         .execute(db)
         .await?;
