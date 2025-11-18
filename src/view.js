@@ -179,17 +179,23 @@ const toggle_add_snippet = () => {
 }
 
 window.onkeydown = function(e) {
-//  Toastify({
-//    text: "Keydown: " + e.key,
-//    stopOnFocus: true,
-//    gravity: "bottom",
-//    position: "center"
-//  }).showToast()
   if (keybind_handler(e, "switch_menu")) {
     window.location.href = "./index.html";
   }
   if (keybind_handler(e, "toggle_add_snippet")) {
     toggle_add_snippet();
+  }
+  if (keybind_handler(e, "scroll_top")) {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }
+  if (keybind_handler(e, "scroll_bottom")) {
+    window.scrollTo({
+      top: document.getElementById('view').offsetHeight,
+      behavior: 'smooth'
+    });
   }
 }
 

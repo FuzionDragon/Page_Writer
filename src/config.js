@@ -14,7 +14,9 @@ const default_bindings = {
   "update_selected_snippet": "Control+Enter",
   "toggle_add_snippet": "Control+q",
   "add_snippet": "Control+Enter",
-  "toggle_shortcuts_menu": "Control+h"
+  "toggle_shortcuts_menu": "Control+h",
+  "scroll_top": "g",
+  "scroll_bottom": "Control+g"
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -100,12 +102,12 @@ export const toggle_shortcuts_menu = () => {
 }
 
 const parse_keybind = (keybind) => {
-//  Toastify({
-//    text: "Parsing keybind: " + keybind,
-//    stopOnFocus: true,
-//    gravity: "bottom",
-//    position: "center"
-//  }).showToast();
+  //  Toastify({
+  //    text: "Parsing keybind: " + keybind,
+  //    stopOnFocus: true,
+  //    gravity: "bottom",
+  //    position: "center"
+  //  }).showToast();
 
   const parts = keybind.split('+').map(part => part.trim());
   const modifiers = parts.slice(0, -1);
@@ -123,12 +125,12 @@ const parse_keybind = (keybind) => {
 export const keybind_handler = (e, command) => {
   const data = localStorage.getItem("keybinds");
   let keybinds = data ? JSON.parse(data) : {};
-//  Toastify({
-//    text: "handing command: " + command + "checking binding: " + e,
-//    stopOnFocus: true,
-//    gravity: "bottom",
-//    position: "center"
-//  }).showToast();
+  //  Toastify({
+  //    text: "handing command: " + command + "checking binding: " + e,
+  //    stopOnFocus: true,
+  //    gravity: "bottom",
+  //    position: "center"
+  //  }).showToast();
   if ((keybinds[command] === undefined) || (keybinds[command] === null)) {
     switch (command) {
       case "switch_menu":
@@ -184,6 +186,16 @@ export const keybind_handler = (e, command) => {
         keybinds["toggle_shortcuts_menu"] = default_bindings["toggle_shortcuts_menu"];
         localStorage.setItem("keybinds", JSON.stringify(keybinds));
         return (e.ctrlKey && e.key === "h")
+      case "scroll_top":
+        console.log("Pressed scroll_top")
+        keybinds["scroll_top"] = default_bindings["scroll_top"];
+        localStorage.setItem("keybinds", JSON.stringify(keybinds));
+        return (e.key === "g")
+      case "scroll_bottom":
+        console.log("Pressed scroll_bottom")
+        keybinds["scroll_bottom"] = default_bindings["scroll_bottom"];
+        localStorage.setItem("keybinds", JSON.stringify(keybinds));
+        return (e.ctrlKey && e.key === "g")
       default:
         break;
     }
