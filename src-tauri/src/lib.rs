@@ -150,16 +150,10 @@ async fn export_all_documents() -> Result<String, Error> {
 
     let path_string = document_path.into_os_string().into_string().unwrap();
 
-    println!("{path_string}");
     fs::create_dir(&path_string)?;
 
-    // needs to find (and / or create) the directory in the path to hold all the markdown files in
     for (name, contents) in &corpus {
-        //println!("{name}: {contents}");
         let file_path = format!("{path_string}{name}.md");
-        println!("{file_path}");
-        //let mut file = File::create("{path_string}{name}.md")?;
-        //file.write_all(b"{contents}")?;
 
         fs::write(file_path, contents)?;
     }
