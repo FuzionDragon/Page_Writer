@@ -1,4 +1,7 @@
-use std::fs;
+use std::{
+    fs::{self, File},
+    io::Write,
+};
 
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 
@@ -134,6 +137,36 @@ async fn load_document(document_name: String) -> Result<Option<DocumentSnippets>
     Ok(result)
 }
 
+// Only usable on PC, must have export path defined in toml, but default is in
+// '~/Documents/PageWriter'
+#[tauri::command]
+async fn export_all_documents() -> Result<String, Error> {
+    let db = setup_db().await?;
+
+    let corpus = sqlite_interface::load_corpus(&db).await?;
+
+    let mut document_path = dirs::document_dir().unwrap();
+    document_path.push("PageWriter/");
+
+    let path_string = document_path.into_os_string().into_string().unwrap();
+
+    println!("{path_string}");
+    fs::create_dir(&path_string)?;
+
+    // needs to find (and / or create) the directory in the path to hold all the markdown files in
+    for (name, contents) in &corpus {
+        //println!("{name}: {contents}");
+        let file_path = format!("{path_string}{name}.md");
+        println!("{file_path}");
+        //let mut file = File::create("{path_string}{name}.md")?;
+        //file.write_all(b"{contents}")?;
+
+        fs::write(file_path, contents)?;
+    }
+
+    Ok(path_string)
+}
+
 #[tauri::command]
 async fn print(text: String) -> Result<(), Error> {
     println!("Printing {text}");
@@ -209,6 +242,7 @@ pub fn run() {
             fetch_marked_document,
             delete_document,
             delete_snippet,
+            export_all_documents,
             print,
         ])
         .run(tauri::generate_context!())

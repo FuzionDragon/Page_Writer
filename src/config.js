@@ -16,7 +16,8 @@ const default_bindings = {
   "add_snippet": "Control+Enter",
   "toggle_shortcuts_menu": "Control+h",
   "scroll_top": "g",
-  "scroll_bottom": "Control+g"
+  "scroll_bottom": "Control+g",
+  "export_notes": "Control+Shift+m"
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -196,6 +197,11 @@ export const keybind_handler = (e, command) => {
         keybinds["scroll_bottom"] = default_bindings["scroll_bottom"];
         localStorage.setItem("keybinds", JSON.stringify(keybinds));
         return (e.ctrlKey && e.key === "g")
+      case "export_notes":
+        console.log("Pressed export_notes")
+        keybinds["export_notes"] = default_bindings["export_notes"];
+        localStorage.setItem("keybinds", JSON.stringify(keybinds));
+        return (e.ctrlKey && e.shiftKey && e.key === "m")
       default:
         break;
     }

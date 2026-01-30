@@ -54,17 +54,36 @@ snippet_input.onkeydown = function(e) {
 }
 
 window.onkeydown = function(e) {
-//  Toastify({
-//    text: "Keydown: " + e.key,
-//    stopOnFocus: true,
-//    gravity: "bottom",
-//    position: "center"
-//  }).showToast()
+  //  Toastify({
+  //    text: "Keydown: " + e.key,
+  //    stopOnFocus: true,
+  //    gravity: "bottom",
+  //    position: "center"
+  //  }).showToast()
 
   if (keybind_handler(e, "submit_snippet")) {
     submit();
   }
   if (keybind_handler(e, "switch_menu")) {
     window.location.href = "./view.html";
+  }
+  if (keybind_handler(e, "export_notes")) {
+    invoke("export_all_documents")
+      .then((path) => {
+        Toastify({
+          text: "Successfully exported all notes to: " + path,
+          stopOnFocus: true,
+          gravity: "bottom",
+          position: "center"
+        }).showToast()
+      })
+      .catch((error) =>
+        Toastify({
+          text: "Error submitting snippet" + error,
+          stopOnFocus: true,
+          gravity: "bottom",
+          position: "center"
+        }).showToast()
+      );
   }
 }
