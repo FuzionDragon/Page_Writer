@@ -79,7 +79,7 @@ window.onkeydown = function(e) {
       })
       .catch((error) =>
         Toastify({
-          text: "Error submitting snippet" + error,
+          text: "Error exporting all notes: " + error,
           stopOnFocus: true,
           gravity: "bottom",
           position: "center"

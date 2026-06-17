@@ -1,7 +1,4 @@
-use std::{
-    fs::{self, File},
-    io::Write,
-};
+use std::fs::{self};
 
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 
