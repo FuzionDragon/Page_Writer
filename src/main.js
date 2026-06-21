@@ -67,23 +67,29 @@ window.onkeydown = function(e) {
   if (keybind_handler(e, "switch_menu")) {
     window.location.href = "./view.html";
   }
-  if (keybind_handler(e, "export_notes")) {
-    invoke("export_all_documents")
-      .then((path) => {
-        Toastify({
-          text: "Successfully exported all notes to: " + path,
-          stopOnFocus: true,
-          gravity: "bottom",
-          position: "center"
-        }).showToast()
-      })
-      .catch((error) =>
-        Toastify({
-          text: "Error exporting all notes: " + error,
-          stopOnFocus: true,
-          gravity: "bottom",
-          position: "center"
-        }).showToast()
-      );
+  if (keybind_handler(e, "sync_notes")) {
+    Toastify({
+      text: "Sync notes",
+      stopOnFocus: true,
+      gravity: "bottom",
+      position: "center"
+    }).showToast();
+    //  invoke("export_all_documents")
+    //    .then((path) => {
+    //      Toastify({
+    //        text: "Successfully exported all notes to: " + path,
+    //        stopOnFocus: true,
+    //        gravity: "bottom",
+    //        position: "center"
+    //      }).showToast()
+    //    })
+    //    .catch((error) =>
+    //      Toastify({
+    //        text: "Error exporting all notes: " + error,
+    //        stopOnFocus: true,
+    //        gravity: "bottom",
+    //        position: "center"
+    //      }).showToast()
+    //    );
   }
 }

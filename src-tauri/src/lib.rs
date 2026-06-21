@@ -216,6 +216,29 @@ async fn delete_snippet(snippet_id: i32) -> Result<(), Error> {
     Ok(())
 }
 
+#[tauri::command]
+async fn init_client() -> Result<(), Error> {
+    #[cfg(target_os = "linux")]
+    let path = dirs::data_local_dir()
+        .expect("Unable to find local data directory")
+        .join(DATA_PATH)
+        .into_os_string()
+        .into_string()
+        .unwrap();
+
+    #[cfg(target_os = "android")]
+    let path = get_android_path()?;
+
+    // needs to automatically accept take the database from the other device, and copy it cover
+    // without needing more computation
+    if !Sqlite::database_exists(&path).await.unwrap_or(false) {
+        println!("Creating database: {}", &path);
+        Sqlite::create_database(&path).await?;
+    }
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
