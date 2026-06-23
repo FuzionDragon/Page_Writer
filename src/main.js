@@ -80,7 +80,7 @@ const sync_notes = () => {
     })
     .catch((error) => {
       Toastify({
-        text: "Error exporting all notes: " + error,
+        text: "Error: " + error,
         stopOnFocus: true,
         gravity: "bottom",
         position: "center"

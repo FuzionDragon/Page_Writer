@@ -13,7 +13,7 @@ use std::{
 const PORT: &str = "55515";
 const LINUX_TMP_DIR: &str = "/tmp";
 const ANDROID_TMP_DIR: &str = "/data/local/tmp";
-const TIME_LIMIT: u64 = 8; // seconds
+const TIME_LIMIT: u64 = 30; // seconds
 
 #[derive(Serialize, Deserialize, Debug)]
 struct FileInformation {
@@ -47,12 +47,11 @@ impl FileInformation {
 
 // needs to end the loop after a certain amount of time passes before declaring that no other valid
 // peer is present.
-fn server(data_path: &str) -> Result<String> {
-    let server_address = format!("0.0.0.0:{}", PORT);
-    let listener = TcpListener::bind(&server_address)?;
+fn server(data_path: &str, listener: TcpListener) -> Result<String> {
     for stream in listener.incoming() {
         match stream {
             Ok(mut stream) => {
+                println!("Ok");
                 let info = FileInformation::new(data_path)?;
                 let bytes = serde_json::to_vec(&info).unwrap();
                 stream.write_all(&bytes)?;
@@ -65,37 +64,46 @@ fn server(data_path: &str) -> Result<String> {
                     return Ok("SUCCESS".to_string());
                 }
             }
-            Err(error) => {
-                println!("error during connection {:?}", error);
+            Err(_err) => {
+                println!("Server exists");
+                return Ok("SERVER EXISTS".to_string());
             }
         }
     }
 
+    println!("Reached end of server");
     Ok("NO SUCCESS".to_string())
 }
 
+// needs to first try running a server command as a thread
 pub async fn test(data_path: &str) -> Result<String> {
     let owned_data_path = data_path.to_owned();
-    let server_thread = thread::spawn(move || server(&owned_data_path));
+    // check if address is in use
+    let server_address = format!("0.0.0.0:{}", PORT);
+    let server_listener = TcpListener::bind(&server_address);
+    if server_listener.is_err() {
+        let _client_thread = thread::spawn(|| client());
+        return Ok("DEVICE FOUND".to_string());
+    }
+
+    let server_thread = thread::spawn(move || server(&owned_data_path, server_listener?));
     let start_time = Instant::now();
     let time_limit = Duration::new(TIME_LIMIT, 0);
-    println!("{:?}", start_time);
-    println!("{:?}", time_limit);
     loop {
-        if start_time.elapsed() > time_limit {
-            println!("Server closed");
-            return Ok("NO SUCCESS".to_string());
+        if server_thread.is_finished() {
+            println!("Thread is finished");
+            let server_result = server_thread.join().unwrap()?;
+            println!("{:?}", server_result);
+            let result = match server_result.as_str() {
+                "SUCCESS" => Ok("SUCCESS".to_string()),
+                _ => Ok("NO SUCCESS".to_string()),
+            };
+            return result;
         }
-    }
-    let server_result = server_thread.join().unwrap();
-    println!("{:?}", server_result);
-    match server_result {
-        Ok(response) => match response.as_str() {
-            "SUCCESS" => Ok("SUCCESS".to_string()),
-            "NO SUCCESS" => Ok("NO SUCCESS".to_string()),
-            _ => Err(anyhow!("Server had error during connection")),
-        },
-        Err(err) => Ok(format!("error {}", err)),
+        if start_time.elapsed() > time_limit {
+            println!("Time out closed");
+            return Ok("TIMEOUT".to_string());
+        }
     }
 }
 
