@@ -183,6 +183,13 @@ textarea {
   bottom: 0;
 }
 
+#sync_overlay{
+  @include nav;
+  right: 0;
+  left: auto;
+  bottom: 0;
+}
+
 #title-input {
   font-size: 1.4em;
 }

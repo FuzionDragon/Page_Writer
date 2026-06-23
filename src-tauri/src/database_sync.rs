@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use local_ip_address::local_ip;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -6,11 +6,14 @@ use std::{
     io::{prelude::*, BufReader, Read, Write},
     net::{TcpListener, TcpStream},
     path::{Path, PathBuf},
+    thread,
+    time::{Duration, Instant},
 };
 
 const PORT: &str = "55515";
 const LINUX_TMP_DIR: &str = "/tmp";
 const ANDROID_TMP_DIR: &str = "/data/local/tmp";
+const TIME_LIMIT: u64 = 8; // seconds
 
 #[derive(Serialize, Deserialize, Debug)]
 struct FileInformation {
@@ -42,9 +45,11 @@ impl FileInformation {
     }
 }
 
-fn server(data_path: &str) -> Result<()> {
+// needs to end the loop after a certain amount of time passes before declaring that no other valid
+// peer is present.
+fn server(data_path: &str) -> Result<String> {
     let server_address = format!("0.0.0.0:{}", PORT);
-    let listener = TcpListener::bind(&server_address).unwrap();
+    let listener = TcpListener::bind(&server_address)?;
     for stream in listener.incoming() {
         match stream {
             Ok(mut stream) => {
@@ -57,7 +62,7 @@ fn server(data_path: &str) -> Result<()> {
                 let should_send = response == "YES";
                 if should_send {
                     stream.write_all(&info.file_data()?)?;
-                    break;
+                    return Ok("SUCCESS".to_string());
                 }
             }
             Err(error) => {
@@ -66,7 +71,32 @@ fn server(data_path: &str) -> Result<()> {
         }
     }
 
-    Ok(())
+    Ok("NO SUCCESS".to_string())
+}
+
+pub async fn test(data_path: &str) -> Result<String> {
+    let owned_data_path = data_path.to_owned();
+    let server_thread = thread::spawn(move || server(&owned_data_path));
+    let start_time = Instant::now();
+    let time_limit = Duration::new(TIME_LIMIT, 0);
+    println!("{:?}", start_time);
+    println!("{:?}", time_limit);
+    loop {
+        if start_time.elapsed() > time_limit {
+            println!("Server closed");
+            return Ok("NO SUCCESS".to_string());
+        }
+    }
+    let server_result = server_thread.join().unwrap();
+    println!("{:?}", server_result);
+    match server_result {
+        Ok(response) => match response.as_str() {
+            "SUCCESS" => Ok("SUCCESS".to_string()),
+            "NO SUCCESS" => Ok("NO SUCCESS".to_string()),
+            _ => Err(anyhow!("Server had error during connection")),
+        },
+        Err(err) => Ok(format!("error {}", err)),
+    }
 }
 
 fn client() -> Result<()> {

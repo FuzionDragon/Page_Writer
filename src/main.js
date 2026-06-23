@@ -33,6 +33,7 @@ const submit = function() {
 }
 
 document.getElementById("submit-snippet").onclick = () => submit();
+document.getElementById("sync").onclick = () => sync_notes();
 
 title_input.onkeydown = function(e) {
   if ((e.key === 'ArrowDown' || e.key === 'ArrowRight') && title_input.selectionEnd === title_input.value.length) {
@@ -53,6 +54,42 @@ snippet_input.onkeydown = function(e) {
   }
 }
 
+const sync_notes = () => {
+  Toastify({
+    text: "Searching local network for devices running Page Writer...",
+    stopOnFocus: true,
+    gravity: "bottom",
+    position: "center"
+  }).showToast();
+  Toastify({
+    text: "Device found, sending notes to be synced..",
+    stopOnFocus: true,
+    gravity: "bottom",
+    position: "center"
+  }).showToast();
+  // needs to be replaced by different function carrying out both
+  invoke("init_client")
+    .then((response) => {
+      Toastify({
+        text: "Response: " + response,
+        stopOnFocus: true,
+        gravity: "bottom",
+        position: "center"
+      }).showToast()
+      console.log(response);
+    })
+    .catch((error) => {
+      Toastify({
+        text: "Error exporting all notes: " + error,
+        stopOnFocus: true,
+        gravity: "bottom",
+        position: "center"
+      }).showToast()
+      console.log(error);
+    }
+    );
+}
+
 window.onkeydown = function(e) {
   //  Toastify({
   //    text: "Keydown: " + e.key,
@@ -68,28 +105,6 @@ window.onkeydown = function(e) {
     window.location.href = "./view.html";
   }
   if (keybind_handler(e, "sync_notes")) {
-    Toastify({
-      text: "Sync notes",
-      stopOnFocus: true,
-      gravity: "bottom",
-      position: "center"
-    }).showToast();
-    //  invoke("export_all_documents")
-    //    .then((path) => {
-    //      Toastify({
-    //        text: "Successfully exported all notes to: " + path,
-    //        stopOnFocus: true,
-    //        gravity: "bottom",
-    //        position: "center"
-    //      }).showToast()
-    //    })
-    //    .catch((error) =>
-    //      Toastify({
-    //        text: "Error exporting all notes: " + error,
-    //        stopOnFocus: true,
-    //        gravity: "bottom",
-    //        position: "center"
-    //      }).showToast()
-    //    );
+    sync_notes();
   }
 }

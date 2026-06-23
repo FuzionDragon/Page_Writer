@@ -1,38 +1,43 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="stylesheet" href="./style.scss" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Page Writer</title>
-    <script type="module" src="./config.js" defer></script>
-    <script type="module" src="./main.js" defer></script>
-    <script type="module" src="./search.js" defer></script>
-    <style>
-      .logo.vanilla:hover {
-        filter: drop-shadow(0 0 2em #ffe21c);
-      }
-    </style>
-  </head>
 
-  <body id="submit">
-    <div id="navbar">
-      <div id="submit_snippet_overlay">
-        <button id="submit-snippet" type="button">Submit</button>
-      </div>
-      <div id="searchdocumentoverlay">
-        <button id="search_document" type="button">Search</a>
-      </div>
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="./style.scss" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Page Writer</title>
+  <script type="module" src="./config.js" defer></script>
+  <script type="module" src="./main.js" defer></script>
+  <script type="module" src="./search.js" defer></script>
+  <style>
+    .logo.vanilla:hover {
+      filter: drop-shadow(0 0 2em #ffe21c);
+    }
+  </style>
+</head>
+
+<body id="submit">
+  <div id="navbar">
+    <div id="submit_snippet_overlay">
+      <button id="submit-snippet" type="button">Submit</button>
     </div>
-    <div id="leftnav">
-      <a href="./view.html">View</a>
+    <div id="searchdocumentoverlay">
+      <button id="search_document" type="button">Search</a>
     </div>
-    <div id="rightnav">
-      <button id="marked_document" type="button">None</a>
-    </div>
-    <div>
-      <textarea id="title-input" rows="1"></textarea>
-      <textarea id="snippet-input" rows="16"></textarea>
-    </div>
-  </body>
+  </div>
+  <div id="leftnav">
+    <a href="./view.html">View</a>
+  </div>
+  <div id="rightnav">
+    <button id="marked_document" type="button">None</a>
+  </div>
+  <div id="bottomrightnav">
+    <button id="sync" type="button">Sync</button>
+  </div>
+  <div>
+    <textarea id="title-input" rows="1"></textarea>
+    <textarea id="snippet-input" rows="16"></textarea>
+  </div>
+</body>
+
 </html>

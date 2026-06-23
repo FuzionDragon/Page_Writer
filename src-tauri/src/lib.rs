@@ -217,7 +217,7 @@ async fn delete_snippet(snippet_id: i32) -> Result<(), Error> {
 }
 
 #[tauri::command]
-async fn init_client() -> Result<(), Error> {
+async fn init_client() -> Result<String, Error> {
     #[cfg(target_os = "linux")]
     let path = dirs::data_local_dir()
         .expect("Unable to find local data directory")
@@ -236,7 +236,9 @@ async fn init_client() -> Result<(), Error> {
         Sqlite::create_database(&path).await?;
     }
 
-    Ok(())
+    let response = database_sync::test(&path).await?;
+    println!("{response}");
+    Ok(response)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -258,6 +260,7 @@ pub fn run() {
             delete_document,
             delete_snippet,
             export_all_documents,
+            init_client,
             print,
         ])
         .run(tauri::generate_context!())
