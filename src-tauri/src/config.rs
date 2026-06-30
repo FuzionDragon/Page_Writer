@@ -36,7 +36,7 @@ struct Config {
 }
 
 fn get_android_path() -> String {
-    format!("{}/{}/{}", "/data/data", ANDROID_APP_NAME, "files")
+    format!("{}/{}/{}/", "/data/data", ANDROID_APP_NAME, "files")
 }
 
 pub fn fetch_config_path() -> Result<String, Error> {

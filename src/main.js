@@ -61,12 +61,6 @@ const sync_notes = () => {
     gravity: "bottom",
     position: "center"
   }).showToast();
-  Toastify({
-    text: "Device found, sending notes to be synced..",
-    stopOnFocus: true,
-    gravity: "bottom",
-    position: "center"
-  }).showToast();
   // needs to be replaced by different function carrying out both
   invoke("init_client")
     .then((response) => {

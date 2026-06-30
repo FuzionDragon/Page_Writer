@@ -14,6 +14,7 @@ use crate::{
 };
 
 pub const DATA_PATH: &str = "PageWriter/data.db";
+pub const BACKUP_DATA_PATH: &str = "PageWriter/data.db.bkp";
 const ANDROID_APP_NAME: &str = "com.davidl.page_writer";
 
 #[derive(Debug, thiserror::Error)]
@@ -67,6 +68,39 @@ async fn setup_db() -> Result<SqlitePool, Error> {
     Ok(db)
 }
 
+fn make_backup() -> Result<(), Error> {
+    // Default
+    #[cfg(target_os = "linux")]
+    let path = dirs::data_local_dir()
+        .expect("Unable to find local data directory")
+        .join(DATA_PATH)
+        .into_os_string()
+        .into_string()
+        .unwrap();
+
+    #[cfg(target_os = "android")]
+    let path = get_android_path()?;
+
+    // Default
+    #[cfg(target_os = "linux")]
+    let backup_path = dirs::data_local_dir()
+        .expect("Unable to find local data directory")
+        .join(BACKUP_DATA_PATH)
+        .into_os_string()
+        .into_string()
+        .unwrap();
+
+    #[cfg(target_os = "android")]
+    let backup_path = format!(
+        "{}/{}/{}/{}",
+        "/data/data", ANDROID_APP_NAME, "files", BACKUP_DATA_PATH
+    );
+
+    fs::copy(path, backup_path)?;
+
+    Ok(())
+}
+
 #[tauri::command]
 fn get_config_path() -> Result<String, Error> {
     let path = config::fetch_config_path()?;
@@ -83,7 +117,12 @@ fn get_android_path_tauri() -> Result<String, Error> {
 
 #[tauri::command]
 async fn load_keybindings() -> Result<Option<Keybindings>, Error> {
+    // Default
+    #[cfg(target_os = "linux")]
     let keybindings = config::fetch_keybindings().await?;
+
+    #[cfg(target_os = "android")]
+    let keybindings = None;
 
     Ok(keybindings)
 }
@@ -236,8 +275,14 @@ async fn init_client() -> Result<String, Error> {
         Sqlite::create_database(&path).await?;
     }
 
-    let response = database_sync::test(&path).await?;
-    println!("{response}");
+    println!("Send data");
+    let response = database_sync::search_devices().await?;
+    let client_address: Vec<&str> = response.split(":").collect();
+    let client_ip = client_address[0].to_string();
+
+    print!("Shared data starting");
+    database_sync::share_data(&path, client_ip).await?;
+
     Ok(response)
 }
 
