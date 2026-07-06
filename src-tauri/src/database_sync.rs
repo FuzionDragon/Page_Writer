@@ -1,23 +1,25 @@
-use anyhow::{anyhow, Result};
-use axum;
-use local_ip_address::local_ip;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{
     fs,
     io::{prelude::*, BufReader, Read, Write},
     net::{TcpListener, TcpStream, UdpSocket},
     path::{Path, PathBuf},
-    sync::Arc,
     thread,
     time::{Duration, Instant},
 };
 
 const PORT: &str = "55515";
-const LINUX_TMP_DIR: &str = "/tmp";
-const ANDROID_TMP_DIR: &str = "/data/local/tmp";
 const LOCAL_DATA_NAME: &str = "local_data.db";
 const REMOTE_DATA_NAME: &str = "remote_data.db";
 const TIME_LIMIT: u64 = 20; // seconds
+                            //
+const LINUX_TMP_DIR: &str = "/tmp";
+// seems android doesn't have a temp dir when looking at modern version of Android, so manual
+// deletion of these files are needed
+//
+// this is appended onto the usual data directory
+const ANDROID_TMP_DIR: &str = "cache";
 
 #[derive(Serialize, Deserialize, Debug)]
 struct FileInformation {
@@ -153,21 +155,22 @@ fn udp_reciever() -> Result<Option<String>> {
 }
 
 // used to find devices IPs on the network needed for completing data transfers
-pub async fn search_devices() -> Result<String> {
+pub async fn search_devices(data_path: String) -> Result<String> {
     // first pass, checks if there is a server running by sending a broadcast,
     // expected to be returned if found
+    let path_clone = data_path.clone();
+    let _server_thread = thread::spawn(move || server(&path_clone));
     println!("First send");
-    //udp_sender()?;
-    for _ in 0..3 {
-        udp_sender()?;
-        thread::sleep(Duration::from_secs(1));
-    }
+    udp_sender()?;
+    //    for _ in 0..3 {
+    //        udp_sender()?;
+    //        thread::sleep(Duration::from_secs(1));
+    //    }
 
     // server thread will fail if there already exists a server with the same port and address on
     // the network
     let reciever_thread = thread::spawn(|| udp_reciever());
 
-    //    let server_thread = thread::spawn(move || server(&owned_data_path));
     let start_time = Instant::now();
     let time_limit = Duration::new(TIME_LIMIT, 0);
 
@@ -175,6 +178,22 @@ pub async fn search_devices() -> Result<String> {
         if reciever_thread.is_finished() {
             println!("Thread is finished");
             let remote_ip = reciever_thread.join().unwrap()?;
+            println!("remote IP is {:?}", remote_ip);
+            let client_address: Option<String> = match remote_ip.clone() {
+                Some(ip) => {
+                    let client_address: Vec<&str> = ip.split(":").collect();
+                    Some(client_address[0].to_string())
+                }
+                None => None,
+            };
+            println!("Sending data to other device");
+
+            // need to resolve 'temporarily stores borrowed value' nonsense
+            if let Some(address) = client_address {
+                println!("Client address = {address}");
+                client(address, &data_path)?;
+            }
+
             println!("Starting sender after joining threads");
             for _ in 0..3 {
                 udp_sender()?;
@@ -182,11 +201,10 @@ pub async fn search_devices() -> Result<String> {
             }
 
             println!("Sender completed");
-            println!("Remote: {:?}", remote_ip);
-            let result = match remote_ip {
-                Some(result) => Ok(format!(
-                    "IP found for existing client or server is found at {:?}",
-                    result
+            let result = match remote_ip.clone() {
+                Some(ip) => Ok(format!(
+                    "Device found, data sent and recieved" //           "IP found for existing client or server is found at {:?}",
+                                                           //           ip
                 )),
                 None => Ok(format!("No IP found")),
             };
@@ -199,37 +217,8 @@ pub async fn search_devices() -> Result<String> {
     }
 }
 
-// needs to start a server thread and also start a client thread using the other device thread
-// may need to temporarily return a string result for Toast viewing
-pub async fn share_data(data_path: &str, client_ip: String) -> Result<()> {
-    // make a copy of local save
-    #[cfg(target_os = "linux")]
-    let path = Path::new(LINUX_TMP_DIR).join(LOCAL_DATA_NAME);
-
-    #[cfg(target_os = "android")]
-    let path = Path::new(ANDROID_TMP_DIR).join(LOCAL_DATA_NAME);
-
-    let server_thread = thread::spawn(move || server(path.to_str().unwrap()));
-    let client_thread = thread::spawn(move || client(client_ip).unwrap());
-    let start_time = Instant::now();
-    let time_limit = Duration::new(TIME_LIMIT, 0);
-
-    loop {
-        if client_thread.is_finished() && server_thread.is_finished() {
-            println!("Server and client threads are done");
-            break;
-        }
-        if start_time.elapsed() > time_limit {
-            println!("Time out closed");
-            break;
-        }
-    }
-
-    Ok(())
-}
-
 // needs to take in the local ip of server device
-fn client(client_ip: String) -> Result<()> {
+fn client(client_ip: String, data_path: &str) -> Result<()> {
     let client_address = format!("{}:{}", client_ip, PORT);
     //let client_address = format!("{}:{}", local_ip()?.to_string(), PORT);
     let mut stream = TcpStream::connect(client_address).unwrap();
@@ -265,15 +254,40 @@ fn client(client_ip: String) -> Result<()> {
     #[cfg(target_os = "linux")]
     let remote_path = Path::new(LINUX_TMP_DIR).join(REMOTE_DATA_NAME);
 
+    #[cfg(target_os = "linux")]
+    let local_path = Path::new(LINUX_TMP_DIR).join(LOCAL_DATA_NAME);
+
+    // temporary
+    println!("Android {:?}", prepare_android_tmp_path(data_path));
     #[cfg(target_os = "android")]
-    let path = Path::new(ANDROID_TMP_DIR).join(file_info.name);
+    let path = Path::new(data_path).join(file_info.name);
 
     #[cfg(target_os = "android")]
-    let remote_path = Path::new(ANDROID_TMP_DIR).join(REMOTE_DATA_NAME);
+    let remote_path = Path::new(data_path)
+        .join(ANDROID_TMP_DIR)
+        .join(REMOTE_DATA_NAME);
+
+    #[cfg(target_os = "android")]
+    let local_path = Path::new(data_path)
+        .join(ANDROID_TMP_DIR)
+        .join(LOCAL_DATA_NAME);
 
     let mut new = fs::File::create(&path).unwrap();
     new.write_all(&file_data)?;
     fs::rename(path, remote_path)?;
-    println!("done");
+    println!("done saving remote file");
+
+    fs::copy(data_path, local_path)?;
+    println!("local data copied to temp");
+
     Ok(())
+}
+
+//#[cfg(target_os = "android")]
+fn prepare_android_tmp_path(data_path: &str) -> Result<PathBuf> {
+    let mut path = PathBuf::from(data_path);
+    path.pop();
+    path.push(ANDROID_TMP_DIR);
+
+    Ok(path)
 }

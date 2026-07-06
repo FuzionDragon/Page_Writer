@@ -71,6 +71,12 @@ const sync_notes = () => {
         position: "center"
       }).showToast()
       console.log(response);
+      Toastify({
+        text: "No error with init_client",
+        stopOnFocus: true,
+        gravity: "bottom",
+        position: "center"
+      }).showToast()
     })
     .catch((error) => {
       Toastify({

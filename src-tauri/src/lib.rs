@@ -276,12 +276,7 @@ async fn init_client() -> Result<String, Error> {
     }
 
     println!("Send data");
-    let response = database_sync::search_devices().await?;
-    let client_address: Vec<&str> = response.split(":").collect();
-    let client_ip = client_address[0].to_string();
-
-    print!("Shared data starting");
-    database_sync::share_data(&path, client_ip).await?;
+    let response = database_sync::search_devices(path).await?;
 
     Ok(response)
 }
