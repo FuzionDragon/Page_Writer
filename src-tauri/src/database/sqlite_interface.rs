@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::{Ok, Result};
 use sqlx::{FromRow, SqlitePool};
 
-use crate::brain_compiler::{DocumentSnippets, SnippetEntry};
+use crate::database::{DocumentSnippets, SnippetEntry};
 
 use super::{Corpus, CorpusSnippets};
 

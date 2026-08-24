@@ -2,15 +2,15 @@ use std::fs::{self};
 
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 
-mod brain_compiler;
 mod config;
-mod database_sync;
+mod database;
+mod sync;
 
-use brain_compiler::{submit_snippet, update_snippet};
+use database::{submit_snippet, update_snippet};
 
 use crate::{
-    brain_compiler::{sqlite_interface, CorpusSnippets, DocumentSnippets},
     config::{Keybindings, Settings},
+    database::{sqlite_interface, CorpusSnippets, DocumentSnippets},
 };
 
 pub const DATA_PATH: &str = "PageWriter/data.db";
@@ -46,7 +46,7 @@ pub fn get_android_path() -> Result<String, Error> {
 async fn setup_db() -> Result<SqlitePool, Error> {
     // Default
     #[cfg(target_os = "linux")]
-    let path = dirs::data_local_dir()
+    let path = sysdirs::data_local_dir()
         .expect("Unable to find local data directory")
         .join(DATA_PATH)
         .into_os_string()
@@ -276,7 +276,7 @@ async fn init_client() -> Result<String, Error> {
     }
 
     println!("Send data");
-    let response = database_sync::search_devices(path).await?;
+    let response = sync::search_devices(path).await?;
 
     Ok(response)
 }

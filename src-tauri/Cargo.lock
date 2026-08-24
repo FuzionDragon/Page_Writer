@@ -2689,6 +2689,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "sysdirs",
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
@@ -4085,6 +4086,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.104",
+]
+
+[[package]]
+name = "sysdirs"
+version = "0.9.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7578b3743c69fccacb467648b3755cbee8fcef4cc9a4c8d75b0211cc082e1d20"
+dependencies = [
+ "jni",
+ "ndk-context",
 ]
 
 [[package]]
