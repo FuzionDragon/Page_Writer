@@ -1,16 +1,17 @@
+use anyhow::Result;
 use std::fs::{self};
 
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 
 mod config;
+mod data_exchange;
 mod database;
-mod sync;
 
 use database::{submit_snippet, update_snippet};
 
 use crate::{
     config::{Keybindings, Settings},
-    database::{sqlite_interface, CorpusSnippets, DocumentSnippets},
+    database::{sqlite_interface, CorpusSnippets, DocumentSnippet},
 };
 
 pub const DATA_PATH: &str = "PageWriter/data.db";
@@ -36,16 +37,7 @@ impl serde::Serialize for Error {
     }
 }
 
-pub fn get_android_path() -> Result<String, Error> {
-    let data_path = format!("{}/{}/{}", "/data/data", ANDROID_APP_NAME, "files");
-    fs::create_dir_all(&data_path)?;
-
-    Ok(format!("{}/data.db", data_path))
-}
-
 async fn setup_db() -> Result<SqlitePool, Error> {
-    // Default
-    #[cfg(target_os = "linux")]
     let path = sysdirs::data_local_dir()
         .expect("Unable to find local data directory")
         .join(DATA_PATH)
@@ -54,7 +46,7 @@ async fn setup_db() -> Result<SqlitePool, Error> {
         .unwrap();
 
     #[cfg(target_os = "android")]
-    let path = get_android_path()?;
+    fs::create_dir_all(&path)?;
 
     if !Sqlite::database_exists(&path).await.unwrap_or(false) {
         println!("Creating database: {}", &path);
@@ -69,9 +61,7 @@ async fn setup_db() -> Result<SqlitePool, Error> {
 }
 
 fn make_backup() -> Result<(), Error> {
-    // Default
-    #[cfg(target_os = "linux")]
-    let path = dirs::data_local_dir()
+    let path = sysdirs::data_local_dir()
         .expect("Unable to find local data directory")
         .join(DATA_PATH)
         .into_os_string()
@@ -79,11 +69,9 @@ fn make_backup() -> Result<(), Error> {
         .unwrap();
 
     #[cfg(target_os = "android")]
-    let path = get_android_path()?;
+    fs::create_dir_all(&path)?;
 
-    // Default
-    #[cfg(target_os = "linux")]
-    let backup_path = dirs::data_local_dir()
+    let backup_path = sysdirs::data_local_dir()
         .expect("Unable to find local data directory")
         .join(BACKUP_DATA_PATH)
         .into_os_string()
@@ -91,10 +79,7 @@ fn make_backup() -> Result<(), Error> {
         .unwrap();
 
     #[cfg(target_os = "android")]
-    let backup_path = format!(
-        "{}/{}/{}/{}",
-        "/data/data", ANDROID_APP_NAME, "files", BACKUP_DATA_PATH
-    );
+    fs::create_dir_all(&backup_path)?;
 
     fs::copy(path, backup_path)?;
 
@@ -110,7 +95,14 @@ fn get_config_path() -> Result<String, Error> {
 
 #[tauri::command]
 fn get_android_path_tauri() -> Result<String, Error> {
-    let path = get_android_path()?;
+    let path = sysdirs::data_local_dir()
+        .expect("Unable to find local data directory")
+        .join(DATA_PATH)
+        .into_os_string()
+        .into_string()
+        .unwrap();
+
+    fs::create_dir_all(&path)?;
 
     Ok(path)
 }
@@ -166,7 +158,7 @@ async fn load_snippets() -> Result<CorpusSnippets, Error> {
 }
 
 #[tauri::command]
-async fn load_document(document_name: String) -> Result<Option<DocumentSnippets>, Error> {
+async fn load_document(document_name: String) -> Result<Option<DocumentSnippet>, Error> {
     let db = setup_db().await?;
 
     let result = sqlite_interface::fetch_document(&db, &document_name).await?;
@@ -182,7 +174,7 @@ async fn export_all_documents() -> Result<String, Error> {
 
     let corpus = sqlite_interface::load_corpus(&db).await?;
 
-    let mut document_path = dirs::document_dir().unwrap();
+    let mut document_path = sysdirs::document_dir().unwrap();
     document_path.push("PageWriter/");
 
     let path_string = document_path.into_os_string().into_string().unwrap();
@@ -256,9 +248,8 @@ async fn delete_snippet(snippet_id: i32) -> Result<(), Error> {
 }
 
 #[tauri::command]
-async fn init_client() -> Result<String, Error> {
-    #[cfg(target_os = "linux")]
-    let path = dirs::data_local_dir()
+async fn sync_data() -> Result<String, Error> {
+    let path = sysdirs::data_local_dir()
         .expect("Unable to find local data directory")
         .join(DATA_PATH)
         .into_os_string()
@@ -266,7 +257,7 @@ async fn init_client() -> Result<String, Error> {
         .unwrap();
 
     #[cfg(target_os = "android")]
-    let path = get_android_path()?;
+    fs::create_dir_all(&path)?;
 
     // needs to automatically accept take the database from the other device, and copy it cover
     // without needing more computation
@@ -276,7 +267,7 @@ async fn init_client() -> Result<String, Error> {
     }
 
     println!("Send data");
-    let response = sync::search_devices(path).await?;
+    let response = data_exchange::search_devices(path).await?;
 
     Ok(response)
 }
@@ -300,7 +291,7 @@ pub fn run() {
             delete_document,
             delete_snippet,
             export_all_documents,
-            init_client,
+            sync_data,
             print,
         ])
         .run(tauri::generate_context!())

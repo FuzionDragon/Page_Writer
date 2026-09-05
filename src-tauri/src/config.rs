@@ -35,14 +35,8 @@ struct Config {
     keybindings: Keybindings,
 }
 
-fn get_android_path() -> String {
-    format!("{}/{}/{}/", "/data/data", ANDROID_APP_NAME, "files")
-}
-
 pub fn fetch_config_path() -> Result<String, Error> {
-    // Default
-    #[cfg(target_os = "linux")]
-    let path = dirs::config_local_dir()
+    let path = sysdirs::config_local_dir()
         .expect("Unable to find local config directory")
         .join(CONFIGPATH)
         .into_os_string()
@@ -50,15 +44,13 @@ pub fn fetch_config_path() -> Result<String, Error> {
         .unwrap();
 
     #[cfg(target_os = "android")]
-    let path = get_android_path();
+    fs::create_dir_all(&path)?;
 
     Ok(path)
 }
 
 async fn fetch_config() -> Result<Option<Config>, Error> {
-    // Default
-    #[cfg(target_os = "linux")]
-    let path = dirs::config_local_dir()
+    let path = sysdirs::config_local_dir()
         .expect("Unable to find local config directory")
         .join(CONFIGPATH)
         .into_os_string()
@@ -66,7 +58,7 @@ async fn fetch_config() -> Result<Option<Config>, Error> {
         .unwrap();
 
     #[cfg(target_os = "android")]
-    let path = get_android_path();
+    fs::create_dir_all(&path)?;
 
     if !Path::new(&path).exists() {
         return Ok(None);

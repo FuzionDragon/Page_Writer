@@ -14,13 +14,6 @@ const PORT: &str = "55515";
 const LOCAL_DATA_NAME: &str = "local_data.db";
 const REMOTE_DATA_NAME: &str = "remote_data.db";
 const TIME_LIMIT: u64 = 10; // seconds
-                            //
-const LINUX_TMP_DIR: &str = "/tmp";
-// seems android doesn't have a temp dir when looking at modern version of Android, so manual
-// deletion of these files are needed
-//
-// this is appended onto the usual data directory
-const ANDROID_TMP_DIR: &str = "cache";
 
 #[derive(Serialize, Deserialize, Debug)]
 struct FileInformation {
@@ -186,7 +179,6 @@ pub fn udp_reciever() -> Result<Option<String>> {
 pub fn tcp_client(client_ip: String, data_path: &str) -> Result<()> {
     let client_address = format!("{}:{}", client_ip, PORT);
     //let client_address = format!("{}:{}", local_ip()?.to_string(), PORT);
-    // potential panic?
     let mut stream = TcpStream::connect(client_address)?;
     let mut buf = [0; 1024];
     let size = stream.read(&mut buf)?;
@@ -230,22 +222,6 @@ pub fn tcp_client(client_ip: String, data_path: &str) -> Result<()> {
 
     let local_path = Path::new(&tmp_dir).join(LOCAL_DATA_NAME);
 
-    // temporary
-    // fault lies here, not a directory error found, meaning that the tmp directory may not exist
-    //    println!("Android {:?}", prepare_android_tmp_path(data_path));
-    //    #[cfg(target_os = "android")]
-    //    let path = Path::new(data_path).join(file_info.name);
-    //
-    //    #[cfg(target_os = "android")]
-    //    let remote_path = Path::new(data_path)
-    //        .join(ANDROID_TMP_DIR)
-    //        .join(REMOTE_DATA_NAME);
-    //
-    //    #[cfg(target_os = "android")]
-    //    let local_path = Path::new(data_path)
-    //        .join(ANDROID_TMP_DIR)
-    //        .join(LOCAL_DATA_NAME);
-
     let mut new = fs::File::create(&path)?;
     new.write_all(&file_data)?;
     fs::rename(path, remote_path)?;
@@ -255,13 +231,4 @@ pub fn tcp_client(client_ip: String, data_path: &str) -> Result<()> {
     println!("local data copied to temp");
 
     Ok(())
-}
-
-//#[cfg(target_os = "android")]
-fn prepare_android_tmp_path(data_path: &str) -> Result<PathBuf> {
-    let mut path = PathBuf::from(data_path);
-    path.pop();
-    path.push(ANDROID_TMP_DIR);
-
-    Ok(path)
 }

@@ -6,30 +6,8 @@ use std::{
 
 const TIME_LIMIT: u64 = 10; // seconds
 
-mod database_sync;
-use database_sync::*;
-
-// TODO
-//
-// Currently, starting the syncing operation allows the Linux reciever to catch the UDP signals from
-// the Android sender (Linux first then Android). Response recieved on Linux side only, Android side
-// is silent
-//
-// Starting the syncing operation on the Android side then Linux side does nothing. Linux side times
-// out and gives response, Android side gives nothing.
-//
-// Possibility:
-// 1. Likely a silent error occurs on the Android side, causing an error that cannot be returned and
-//    printed as a toast message
-// 2. Networking / port / address issue on Android side, so the Android side works and sends to a
-//    designated address, but that address goes no where and thus isn't found by the Linux side.
-//    However, this doesn't explain the absense of a return message, so more inclined to be an error
-//    / breakage that cannot be caught by the Android side.
-//
-// Could be a thread related issue with Android, look into udp_reciever function and etc as well as
-// whether threads act differently on Android. Could potentially be an issue causing the loop in
-// search_devices to never close due to both conditions failing, which would be odd but not
-// impossible.
+mod file_exchange;
+use file_exchange::*;
 
 // used to find devices IPs on the network needed for completing data transfers
 pub async fn search_devices(data_path: String) -> Result<String> {

@@ -62,7 +62,7 @@ const sync_notes = () => {
     position: "center"
   }).showToast();
   // needs to be replaced by different function carrying out both
-  invoke("init_client")
+  invoke("sync_data")
     .then((response) => {
       Toastify({
         text: "Response: " + response,
@@ -72,7 +72,7 @@ const sync_notes = () => {
       }).showToast()
       console.log(response);
       Toastify({
-        text: "No error with init_client",
+        text: "No error with sync_data",
         stopOnFocus: true,
         gravity: "bottom",
         position: "center"

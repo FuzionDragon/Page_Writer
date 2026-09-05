@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::{Ok, Result};
 use sqlx::{FromRow, SqlitePool};
 
-use crate::database::{DocumentSnippets, SnippetEntry};
+use crate::database::{DocumentSnippet, SnippetEntry};
 
 use super::{Corpus, CorpusSnippets};
 
@@ -85,6 +85,32 @@ pub async fn load_corpus(db: &SqlitePool) -> Result<Corpus> {
     Ok(corpus)
 }
 
+pub async fn load_all_documents(db: &SqlitePool) -> Result<Vec<DocumentSnippet>> {
+    let documents: Vec<Document> =
+        sqlx::query_as::<_, Document>("SELECT document_id, document_name FROM Document;")
+            .fetch_all(db)
+            .await?;
+    let mut document_snippets: Vec<DocumentSnippet> = Vec::new();
+
+    for document in documents {
+        let snippets: Vec<SnippetEntry> = sqlx::query_as::<_, SnippetEntry>(
+            "SELECT snippet_id, snippet FROM Snippets WHERE document_id = $1;",
+        )
+        .bind(document.document_id)
+        .fetch_all(db)
+        .await?;
+
+        let document_snippet = DocumentSnippet {
+            document_id: document.document_id,
+            document_name: document.document_name,
+            snippets: snippets,
+        };
+        document_snippets.push(document_snippet);
+    }
+
+    Ok(document_snippets)
+}
+
 pub async fn load_snippets(db: &SqlitePool, document_id: i32) -> Result<Vec<Snippet>> {
     let snippets = sqlx::query_as::<_, Snippet>(
         r#"
@@ -100,10 +126,11 @@ pub async fn load_snippets(db: &SqlitePool, document_id: i32) -> Result<Vec<Snip
     Ok(snippets)
 }
 
+// needs to use id
 pub async fn fetch_document(
     db: &SqlitePool,
     document_name: &str,
-) -> Result<Option<DocumentSnippets>> {
+) -> Result<Option<DocumentSnippet>> {
     let snippets = sqlx::query_as::<_, Snippet>(
         r#"
         SELECT snippet_id, snippet, Document.document_id, Document.document_name FROM Snippet
@@ -125,7 +152,7 @@ pub async fn fetch_document(
                 snippet: v.snippet.clone(),
             })
             .collect();
-        let page_document = DocumentSnippets {
+        let page_document = DocumentSnippet {
             document_id: snippets[0].document_id,
             document_name: snippets[0].document_name.clone(),
             snippets: all_snippets,
@@ -174,6 +201,7 @@ pub async fn delete_snippet(db: &SqlitePool, snippet_id: i32) -> Result<()> {
     Ok(())
 }
 
+// needs to us id
 pub async fn delete_document(db: &SqlitePool, document_name: &str) -> Result<()> {
     let snippets = sqlx::query_as::<_, Snippet>(
         r#"
@@ -204,8 +232,6 @@ pub async fn update_snippet(db: &SqlitePool, snippet_id: i32, new_snippet: &str)
 }
 
 pub async fn move_snippet(db: &SqlitePool, snippet_id: i32, document_name: &str) -> Result<()> {
-    println!("{snippet_id}");
-    println!("{document_name}");
     let document_row = sqlx::query_as::<_, Document>(
         "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
     )
@@ -235,6 +261,7 @@ pub async fn set_marked_document(db: &SqlitePool, document_name: &str) -> Result
     Ok(())
 }
 
+// needs reworking to return an id
 pub async fn fetch_marked_document(db: &SqlitePool) -> Result<Option<String>> {
     let marked_document = sqlx::query_as::<_, Document>(
         r#"
@@ -270,8 +297,76 @@ pub async fn add_snippet(db: &SqlitePool, snippet: &str, document_name: &str) ->
     Ok(())
 }
 
-pub async fn add_document(db: &SqlitePool, document_name: &str, snippet: &str) -> Result<()> {
+// needs reworking, needs option to specify document id, also needs option to add multiple snippets
+//
+// requires tweaking code in multiple places
+//
+// slight rant, but why have I imposed document_name queries over ids for multiple functions
+//
+// prioritise document name over id
+//
+// need to also consider those mutually shared too, like different docs and snippets between
+// local and remote data
+//
+// if a key exists but the document name doesn't match / exist, then create a new document with all entries using new key / autokey
+//
+// if a document name exists but key doesn't match, then update all existing document entries accordingly regardless of remote key
+//
+// if both key and document name don't exist then create a new document with the same name and
+// key with relavent snippets too.
+//
+// if both key and document name exist and are the exact same between local and remote, update all snippets accordingly
+//
+// overall, prioritise the document name and ignore the key even if it is different between
+// local and remote.
+//
+// Order of search
+// - Exact Document name and Key combination exists
+// - Document name exists
+// - Key exists / neither exists then create new document
+
+pub async fn add_document(
+    db: &SqlitePool,
+    document_id: Option<i32>,
+    document_name: &str,
+    snippet: &str,
+) -> Result<()> {
     println!("Querying docs");
+    if let Some(id) = document_id {
+        let document = sqlx::query_as::<_, Document>(
+            "SELECT document_id, document_name FROM Document WHERE document_id = $1 AND document_name = $2;",
+        )
+        .bind(document_name.trim())
+        .bind(id)
+        .fetch_optional(db)
+        .await?;
+
+        if let Some(document) = document {
+            println!("Document with the corresponding title and key combination already exists");
+
+            add_snippet(db, snippet, &document.document_name).await?;
+            println!("Appended snippet to existing doc");
+
+            return Ok(());
+        }
+
+        let document = sqlx::query_as::<_, Document>(
+            "SELECT document_id, document_name FROM Document WHERE document_id = $1;",
+        )
+        .bind(id)
+        .fetch_optional(db)
+        .await?;
+
+        if let Some(document) = document {
+            println!("Document with the corresponding key already exists");
+
+            add_snippet(db, snippet, &document.document_name).await?;
+            println!("Appended snippet to existing doc");
+
+            return Ok(());
+        }
+    }
+
     let document = sqlx::query_as::<_, Document>(
         "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
     )
@@ -288,12 +383,22 @@ pub async fn add_document(db: &SqlitePool, document_name: &str, snippet: &str) -
         return Ok(());
     }
 
-    sqlx::query(
-        "INSERT INTO Document (document_name) VALUES ($1) ON CONFLICT(document_name) DO NOTHING;",
-    )
-    .bind(document_name.trim())
-    .execute(db)
-    .await?;
+    if let Some(id) = document_id {
+        sqlx::query(
+            "INSERT INTO Document (document_id, document_name) VALUES ($1, $2) ON CONFLICT(document_id, document_name) DO NOTHING;",
+        )
+        .bind(id)
+        .bind(document_name.trim())
+        .execute(db)
+        .await?;
+    } else {
+        sqlx::query(
+            "INSERT INTO Document (document_name) VALUES ($1) ON CONFLICT(document_name) DO NOTHING;",
+        )
+        .bind(document_name.trim())
+        .execute(db)
+        .await?;
+    }
 
     add_snippet(db, snippet, document_name.trim()).await?;
 
