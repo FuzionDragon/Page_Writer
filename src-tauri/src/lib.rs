@@ -14,8 +14,15 @@ use crate::{
     database::{sqlite_interface, CorpusSnippets, DocumentSnippet},
 };
 
-pub const DATA_PATH: &str = "PageWriter/data.db";
-pub const BACKUP_DATA_PATH: &str = "PageWriter/data.db.bkp";
+// need to change path to prevent having multiple cache / storage directories on Linux
+//pub const DATA_PATH: &str = "PageWriter/data.db";
+//pub const BACKUP_DATA_PATH: &str = "PageWriter/data.db.bkp";
+
+// paths hard coded with current tauri identifier, need to remember to change this in the future
+pub const DATA_PATH: &str = "com.davidl.page-writer/data/data.db";
+pub const BACKUP_DATA_PATH: &str = "com.davidl.page-writer/data/data.db.bkp";
+const LOCAL_DATA_NAME: &str = "local_data.db";
+const REMOTE_DATA_NAME: &str = "remote_data.db";
 const ANDROID_APP_NAME: &str = "com.davidl.page_writer";
 
 #[derive(Debug, thiserror::Error)]
@@ -37,16 +44,36 @@ impl serde::Serialize for Error {
     }
 }
 
+#[cfg(target_os = "android")]
+async fn prepare_android_paths() -> Result<()> {
+    let path = sysdirs::data_local_dir()
+        .expect("Unable to find local data directory")
+        .join("com.davidl.page-writer/data")
+        .into_os_string()
+        .into_string()
+        .unwrap();
+
+    fs::create_dir_all(&path)?;
+
+    Ok(())
+}
+
 async fn setup_db() -> Result<SqlitePool, Error> {
+    let data_path = sysdirs::data_local_dir()
+        .expect("Unable to find local data directory")
+        .join("com.davidl.page-writer/data")
+        .into_os_string()
+        .into_string()
+        .unwrap();
+
+    fs::create_dir_all(&data_path)?;
+
     let path = sysdirs::data_local_dir()
         .expect("Unable to find local data directory")
         .join(DATA_PATH)
         .into_os_string()
         .into_string()
         .unwrap();
-
-    #[cfg(target_os = "android")]
-    fs::create_dir_all(&path)?;
 
     if !Sqlite::database_exists(&path).await.unwrap_or(false) {
         println!("Creating database: {}", &path);
@@ -60,16 +87,16 @@ async fn setup_db() -> Result<SqlitePool, Error> {
     Ok(db)
 }
 
-fn make_backup() -> Result<(), Error> {
+async fn make_backup() -> Result<String, Error> {
+    #[cfg(target_os = "android")]
+    prepare_android_paths().await?;
+
     let path = sysdirs::data_local_dir()
         .expect("Unable to find local data directory")
         .join(DATA_PATH)
         .into_os_string()
         .into_string()
         .unwrap();
-
-    #[cfg(target_os = "android")]
-    fs::create_dir_all(&path)?;
 
     let backup_path = sysdirs::data_local_dir()
         .expect("Unable to find local data directory")
@@ -78,12 +105,9 @@ fn make_backup() -> Result<(), Error> {
         .into_string()
         .unwrap();
 
-    #[cfg(target_os = "android")]
-    fs::create_dir_all(&backup_path)?;
-
     fs::copy(path, backup_path)?;
 
-    Ok(())
+    Ok(String::new())
 }
 
 #[tauri::command]
@@ -249,6 +273,9 @@ async fn delete_snippet(snippet_id: i32) -> Result<(), Error> {
 
 #[tauri::command]
 async fn sync_data() -> Result<String, Error> {
+    #[cfg(target_os = "android")]
+    prepare_android_paths().await?;
+
     let path = sysdirs::data_local_dir()
         .expect("Unable to find local data directory")
         .join(DATA_PATH)
@@ -256,18 +283,79 @@ async fn sync_data() -> Result<String, Error> {
         .into_string()
         .unwrap();
 
-    #[cfg(target_os = "android")]
-    fs::create_dir_all(&path)?;
-
-    // needs to automatically accept take the database from the other device, and copy it cover
-    // without needing more computation
     if !Sqlite::database_exists(&path).await.unwrap_or(false) {
         println!("Creating database: {}", &path);
         Sqlite::create_database(&path).await?;
     }
 
+    let db = setup_db().await?;
+
+    println!(
+        "All data before sync: {:?}",
+        sqlite_interface::load_all_documents(&db).await?
+    );
+
+    // problem child
+    make_backup().await?;
+
+    let local_path = sysdirs::temp_dir()
+        .expect("Unable to find local data directory")
+        .join(LOCAL_DATA_NAME)
+        .into_os_string()
+        .into_string()
+        .unwrap();
+    let remote_path = sysdirs::temp_dir()
+        .expect("Unable to find local data directory")
+        .join(REMOTE_DATA_NAME)
+        .into_os_string()
+        .into_string()
+        .unwrap();
+
     println!("Send data");
-    let response = data_exchange::search_devices(path).await?;
+    let mut response = data_exchange::search_devices(path).await?;
+
+    if !Sqlite::database_exists(&local_path).await.unwrap_or(false)
+        || !Sqlite::database_exists(&remote_path).await.unwrap_or(false)
+    {
+        println!("Local or remote database is missing");
+    } else {
+        println!("Local and remote databases exist, syncing data");
+        let local_pool = SqlitePool::connect(&local_path).await?;
+        let remote_pool = SqlitePool::connect(&remote_path).await?;
+        println!("Local Size After: {:?}", fs::read(&local_path).iter().len());
+        println!(
+            "Remote Size After: {:?}",
+            fs::read(&remote_path).iter().len()
+        );
+
+        sqlite_interface::init(&local_pool).await?;
+        sqlite_interface::init(&remote_pool).await?;
+
+        // problem child
+        database::sync_database(&local_pool, &remote_pool).await?;
+
+        // copy over data
+        let actual_path = sysdirs::data_local_dir()
+            .expect("Unable to find local data directory")
+            .join(DATA_PATH)
+            .into_os_string()
+            .into_string()
+            .unwrap();
+
+        fs::copy(&local_path, actual_path)?;
+
+        response = "Data copied successfully".to_string();
+    }
+
+    if fs::exists(&local_path)? {
+        fs::remove_file(local_path)?;
+    }
+    if fs::exists(&remote_path)? {
+        fs::remove_file(remote_path)?;
+    }
+
+    let all_doc = sqlite_interface::load_all_documents(&db).await?;
+    println!("All documents: {:?}", all_doc);
 
     Ok(response)
 }

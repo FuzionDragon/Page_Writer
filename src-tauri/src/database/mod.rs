@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use std::collections::HashMap;
@@ -7,12 +8,6 @@ pub mod sqlite_interface;
 
 pub type CorpusSnippets = HashMap<String, Vec<String>>;
 pub type Corpus = HashMap<String, String>;
-
-#[derive(Deserialize, Serialize)]
-pub struct PageDocument {
-    document_name: String,
-    snippets: Vec<String>,
-}
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DocumentSnippet {
@@ -25,6 +20,8 @@ pub struct DocumentSnippet {
 pub struct SnippetEntry {
     snippet_id: i32,
     snippet: String,
+    // a stringified Instant
+    last_modified: String,
 }
 
 pub async fn submit_snippet(
@@ -39,7 +36,7 @@ pub async fn submit_snippet(
     };
 
     if let Some(title) = title {
-        sqlite_interface::add_document(db, None, title.trim(), snippet).await?;
+        sqlite_interface::add_document(db, None, title.trim(), vec![snippet.to_owned()]).await?;
 
         Ok(())
     } else {
@@ -47,14 +44,16 @@ pub async fn submit_snippet(
 
         if let Some(marked_document) = marked_document {
             println!("Marked doc found");
-            sqlite_interface::add_document(db, None, &marked_document, snippet).await?;
+            sqlite_interface::add_document(db, None, &marked_document, vec![snippet.to_owned()])
+                .await?;
 
             return Ok(());
         }
 
         println!("No marked doc found");
         let first_line = snippet.lines().collect::<Vec<&str>>()[0];
-        sqlite_interface::add_document(db, None, first_line.trim(), snippet).await?;
+        sqlite_interface::add_document(db, None, first_line.trim(), vec![snippet.to_owned()])
+            .await?;
         sqlite_interface::set_marked_document(db, first_line.trim()).await?;
 
         Ok(())
@@ -129,7 +128,23 @@ pub async fn sync_database(local_db: &SqlitePool, remote_db: &SqlitePool) -> Res
     }
 
     // copy all remote data into the empty local database
-    if local_data.is_empty() {}
+    if local_data.is_empty() {
+        for (_, document) in remote_data {
+            sqlite_interface::add_document(
+                local_db,
+                Some(document.document_id),
+                &document.document_name,
+                document
+                    .snippets
+                    .iter()
+                    .map(|s| s.snippet.clone())
+                    .collect::<Vec<String>>(),
+            )
+            .await?;
+        }
+
+        return Ok(());
+    }
 
     // need a way to filter the data to contain those with matching documents
     let mutual_entries: Vec<(i32, String)> = local_data
@@ -138,18 +153,29 @@ pub async fn sync_database(local_db: &SqlitePool, remote_db: &SqlitePool) -> Res
         .map(|(k, _)| k.to_owned())
         .collect();
 
-    let different_local_documents: Vec<(i32, String)> = local_data
+    // probably redundant
+    let different_local_entries: Vec<(i32, String)> = local_data
         .iter()
         .filter(|(k, _)| !remote_data.contains_key(k))
         .map(|(k, _)| k.to_owned())
         .collect();
 
-    let different_remote_documents: Vec<(i32, String)> = remote_data
+    // The data to be synced into local
+    let different_remote_entries: Vec<(i32, String)> = remote_data
         .iter()
         .filter(|(k, _)| !local_data.contains_key(k))
         .map(|(k, _)| k.to_owned())
         .collect();
 
+    // Order of search
+    // - Exact Document name and Key combination exists
+    // - Document name exists
+    // - Key exists / neither exists then create new document
+    //
+    // overall, prioritise the document name and ignore the key even if it is different between
+    // local and remote.
+
+    // exact key and document name exists
     for entry in mutual_entries {
         sync_document(
             local_data
@@ -160,72 +186,111 @@ pub async fn sync_database(local_db: &SqlitePool, remote_db: &SqlitePool) -> Res
                 .get(&entry)
                 .expect("Unexpected key, entry not found")
                 .to_owned(),
+            local_db,
         )
         .await?;
     }
 
-    for entry in different_local_documents {
-        if different_remote_documents
-            .iter()
-            .any(|(_, d)| &entry.1 == d)
-        {
-            let remote_entry: Vec<(i32, String)> = different_remote_documents
+    // if a remote document exists but local one doesn't, simply add the document in with exact
+    // snippets
+    for entry in different_remote_entries {
+        if different_local_entries.iter().any(|(_, d)| &entry.1 == d) {
+            let local_entry: Vec<(i32, String)> = different_local_entries
                 .iter()
                 .filter(|(_, d)| &entry.1 == d)
                 .map(|e| e.to_owned())
                 .collect();
+
             sync_document(
                 local_data
-                    .get(&entry)
+                    .get(&local_entry[0])
                     .expect("Unexpected key, entry not found")
                     .to_owned(),
                 remote_data
-                    .get(&remote_entry[0])
+                    .get(&entry)
                     .expect("Unexpected key, entry not found")
                     .to_owned(),
+                local_db,
             )
             .await?;
         }
     }
 
-    // potential method
-    //
-    //for ((id, name), document) in local_data {}
+    let local_document = sqlite_interface::load_all_documents(&local_db).await?;
+    println!("Local Document: {:?}", local_document);
 
     Ok(())
 }
 
-// Sqlite Interface needs reworking, primarily with the shift to using broader data types to fetch
-// queried data as opposed to specific ones
-//
 async fn sync_document(
     local_document: DocumentSnippet,
     remote_document: DocumentSnippet,
+    local_db: &SqlitePool,
 ) -> Result<()> {
-    // need to also consider those mutually shared too, like different docs and snippets between
-    // local and remote data
+    // check if IDs exist, then check if the contents are the same, otherwise update them
+    // most likely if an id exists but the contents are the same, then they must have been updated
+    // by the user
     //
-    // if a key exists but the document name doesn't match / exist, then create a new document with all entries using new key / autokey
-    //
-    // if a document name exists but key doesn't match, then update all existing document entries accordingly regardless of remote key
-    //
-    // if both key and document name don't exist then create a new document with the same name and
-    // key with relavent snippets too.
-    //
-    // if both key and document name exist and are the exact same between local and remote, update all snippets accordingly
-    //
-    // overall, prioritise the document name and ignore the key even if it is different between
-    // local and remote.
-    //
-    // Order of search
-    // - Exact Document name and Key combination exists
-    // - Document name exists
-    // - Key exists / neither exists then create new document
+    // if an ID doesn't exist for a remote snippet, then the local version of the snippet must have
+    // been deleted. If remote snippet local snippet ID doesn't exist on remote, then prioritise
+    // maintaining data
+    println!("Local: {:?}", local_document);
+    println!("Remote: {:?}", remote_document);
 
     if local_document.snippets.is_empty() && remote_document.snippets.is_empty() {
         return Ok(());
     } else if local_document.snippets.is_empty() {
-        // needs to fill local document with all remote documents
+        for snippet in remote_document.snippets.clone() {
+            sqlite_interface::add_snippet(
+                local_db,
+                &snippet.snippet,
+                &remote_document.document_name,
+            )
+            .await?;
+        }
+    }
+
+    let remote_snippets: HashMap<i32, SnippetEntry> = remote_document
+        .snippets
+        .iter()
+        .filter(|remote_s| {
+            local_document
+                .snippets
+                .iter()
+                .any(|local_s| local_s.snippet_id == remote_s.snippet_id)
+        })
+        .map(|remote_s| (remote_s.snippet_id, remote_s.to_owned()))
+        .collect();
+
+    // updates snippet if they are out of date (according to if last_modified is before the date on
+    // the remote version, or if the snippet is missing a last_modified value)
+    let mutual_snippets: Vec<(SnippetEntry, SnippetEntry)> = local_document
+        .snippets
+        .iter()
+        .filter(|local_s| remote_snippets.contains_key(&local_s.snippet_id))
+        .map(|local_s| {
+            (
+                local_s.to_owned(),
+                remote_snippets.get(&local_s.snippet_id).unwrap().to_owned(),
+            )
+        })
+        .collect();
+
+    for snippet in mutual_snippets {
+        // needs to decide what to do if there isn't any date specificed
+        let local_modified_time = DateTime::parse_from_rfc3339(&snippet.0.last_modified);
+        let remote_modified_time = DateTime::parse_from_rfc3339(&snippet.1.last_modified);
+
+        if local_modified_time.is_ok() && remote_modified_time.is_ok() {
+            if local_modified_time
+                .unwrap()
+                .lt(&remote_modified_time.unwrap())
+            {
+                update_snippet(&local_db, snippet.0.snippet_id, &snippet.1.snippet).await?;
+            }
+        } else if local_modified_time.is_err() && remote_modified_time.is_ok() {
+            update_snippet(&local_db, snippet.0.snippet_id, &snippet.1.snippet).await?;
+        }
     }
 
     Ok(())

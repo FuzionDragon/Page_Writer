@@ -77,16 +77,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById("search_document").onclick = () => searchDocument();
   }
 
+  await rebuildFuse();
+})
+
+export const rebuildFuse = async () => {
   const corpus = await invoke('load_snippets')
     .catch((error) => console.log("error caught:" + error));
 
-  localStorage['corpus'] = corpus;
+  console.log(JSON.stringify(corpus));
+
+  localStorage['corpus'] = JSON.stringify(corpus);
 
   fuse = new Fuse(Object.keys(corpus), {
     keys: ['title'],
     threshold: 0.4
   });
-})
+}
 
 const searchDocument = () => {
   toggle_picker();

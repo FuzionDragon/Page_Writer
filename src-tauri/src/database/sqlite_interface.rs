@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::{Ok, Result};
+use chrono::Utc;
 use sqlx::{FromRow, SqlitePool};
 
 use crate::database::{DocumentSnippet, SnippetEntry};
@@ -13,6 +14,8 @@ pub struct Snippet {
     snippet: String,
     document_id: i32,
     document_name: String,
+    // a stringified Instant
+    last_modified: String,
 }
 
 #[derive(Debug, FromRow, Clone)]
@@ -27,7 +30,8 @@ pub async fn init(db: &SqlitePool) -> Result<()> {
     CREATE TABLE IF NOT EXISTS Document (
       document_id INTEGER PRIMARY KEY AUTOINCREMENT,
       document_name TEXT UNIQUE,
-      is_marked INTEGER
+      is_marked INTEGER,
+      UNIQUE (document_id, document_name)
     );
     "#,
     )
@@ -36,11 +40,13 @@ pub async fn init(db: &SqlitePool) -> Result<()> {
 
     sqlx::query(
         r#"
-  CREATE TABLE IF NOT EXISTS Snippet (
-    snippet_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    snippet TEXT NOT NULL,
-    document_id INTEGER NOT NULL,
-    FOREIGN KEY (document_id)
+      CREATE TABLE IF NOT EXISTS Snippet (
+        snippet_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        snippet TEXT NOT NULL,
+        last_modified TEXT NOT NULL,
+        document_id INTEGER NOT NULL,
+        UNIQUE (snippet, document_id),
+        FOREIGN KEY (document_id)
       REFERENCES Document (document_id)
   );
   "#,
@@ -54,7 +60,7 @@ pub async fn init(db: &SqlitePool) -> Result<()> {
 pub async fn load_corpus_snippets(db: &SqlitePool) -> Result<CorpusSnippets> {
     let snippets = sqlx::query_as::<_, Snippet>(
         r#"
-    SELECT snippet_id, snippet, Document.document_id, Document.document_name FROM Snippet
+    SELECT snippet_id, snippet, Document.document_id, Document.document_name, last_modified FROM Snippet
     JOIN Document ON Snippet.document_id == Document.document_id;
   "#,
     )
@@ -94,7 +100,7 @@ pub async fn load_all_documents(db: &SqlitePool) -> Result<Vec<DocumentSnippet>>
 
     for document in documents {
         let snippets: Vec<SnippetEntry> = sqlx::query_as::<_, SnippetEntry>(
-            "SELECT snippet_id, snippet FROM Snippets WHERE document_id = $1;",
+            "SELECT snippet_id, snippet, last_modified FROM Snippet WHERE document_id = $1;",
         )
         .bind(document.document_id)
         .fetch_all(db)
@@ -133,7 +139,7 @@ pub async fn fetch_document(
 ) -> Result<Option<DocumentSnippet>> {
     let snippets = sqlx::query_as::<_, Snippet>(
         r#"
-        SELECT snippet_id, snippet, Document.document_id, Document.document_name FROM Snippet
+        SELECT snippet_id, snippet, last_modified, Document.document_id, Document.document_name FROM Snippet
         JOIN Document ON Snippet.document_id == Document.document_id
         WHERE Document.document_name = $1;
       "#,
@@ -150,6 +156,7 @@ pub async fn fetch_document(
             .map(|v| SnippetEntry {
                 snippet_id: v.snippet_id,
                 snippet: v.snippet.clone(),
+                last_modified: v.last_modified.clone(),
             })
             .collect();
         let page_document = DocumentSnippet {
@@ -222,8 +229,13 @@ pub async fn delete_document(db: &SqlitePool, document_name: &str) -> Result<()>
 }
 
 pub async fn update_snippet(db: &SqlitePool, snippet_id: i32, new_snippet: &str) -> Result<()> {
-    sqlx::query("UPDATE Snippet SET snippet = $1 WHERE snippet_id = $2;")
+    // need to get current time and then add it to the entry
+    let current_time: String = Utc::now().to_rfc3339();
+    println!("{current_time}");
+
+    sqlx::query("UPDATE Snippet SET snippet = $1, last_modified = $2 WHERE snippet_id = $3;")
         .bind(new_snippet)
+        .bind(current_time)
         .bind(snippet_id)
         .execute(db)
         .await?;
@@ -280,6 +292,10 @@ pub async fn fetch_marked_document(db: &SqlitePool) -> Result<Option<String>> {
 }
 
 pub async fn add_snippet(db: &SqlitePool, snippet: &str, document_name: &str) -> Result<()> {
+    // need to get current time and then add it to the entry
+    let current_time: String = Utc::now().to_rfc3339();
+    println!("{current_time}");
+
     println!("fetching document");
     let document_row = sqlx::query_as::<_, Document>(
         "SELECT document_id, document_name FROM Document WHERE document_name = $1;",
@@ -288,8 +304,9 @@ pub async fn add_snippet(db: &SqlitePool, snippet: &str, document_name: &str) ->
     .fetch_one(db)
     .await?;
 
-    sqlx::query("INSERT INTO Snippet (snippet, document_id) VALUES ($1, $2) ON CONFLICT(snippet, document_id) DO NOTHING;")
+    sqlx::query("INSERT INTO Snippet (snippet, last_modified, document_id) VALUES ($1, $2, $3) ON CONFLICT(snippet, document_id) DO NOTHING;")
     .bind(snippet)
+    .bind(current_time)
     .bind(document_row.document_id)
     .execute(db)
     .await?;
@@ -297,54 +314,28 @@ pub async fn add_snippet(db: &SqlitePool, snippet: &str, document_name: &str) ->
     Ok(())
 }
 
-// needs reworking, needs option to specify document id, also needs option to add multiple snippets
-//
-// requires tweaking code in multiple places
-//
-// slight rant, but why have I imposed document_name queries over ids for multiple functions
-//
-// prioritise document name over id
-//
-// need to also consider those mutually shared too, like different docs and snippets between
-// local and remote data
-//
-// if a key exists but the document name doesn't match / exist, then create a new document with all entries using new key / autokey
-//
-// if a document name exists but key doesn't match, then update all existing document entries accordingly regardless of remote key
-//
-// if both key and document name don't exist then create a new document with the same name and
-// key with relavent snippets too.
-//
-// if both key and document name exist and are the exact same between local and remote, update all snippets accordingly
-//
-// overall, prioritise the document name and ignore the key even if it is different between
-// local and remote.
-//
-// Order of search
-// - Exact Document name and Key combination exists
-// - Document name exists
-// - Key exists / neither exists then create new document
-
 pub async fn add_document(
     db: &SqlitePool,
     document_id: Option<i32>,
     document_name: &str,
-    snippet: &str,
+    snippets: Vec<String>,
 ) -> Result<()> {
     println!("Querying docs");
     if let Some(id) = document_id {
         let document = sqlx::query_as::<_, Document>(
             "SELECT document_id, document_name FROM Document WHERE document_id = $1 AND document_name = $2;",
         )
-        .bind(document_name.trim())
         .bind(id)
+        .bind(document_name.trim())
         .fetch_optional(db)
         .await?;
 
         if let Some(document) = document {
             println!("Document with the corresponding title and key combination already exists");
 
-            add_snippet(db, snippet, &document.document_name).await?;
+            for snippet in snippets {
+                add_snippet(db, &snippet, &document.document_name).await?;
+            }
             println!("Appended snippet to existing doc");
 
             return Ok(());
@@ -360,7 +351,9 @@ pub async fn add_document(
         if let Some(document) = document {
             println!("Document with the corresponding key already exists");
 
-            add_snippet(db, snippet, &document.document_name).await?;
+            for snippet in snippets {
+                add_snippet(db, &snippet, &document.document_name).await?;
+            }
             println!("Appended snippet to existing doc");
 
             return Ok(());
@@ -377,7 +370,9 @@ pub async fn add_document(
     if let Some(document) = document {
         println!("Document with the corresponding title already exists");
 
-        add_snippet(db, snippet, &document.document_name).await?;
+        for snippet in snippets {
+            add_snippet(db, &snippet, &document.document_name).await?;
+        }
         println!("Appended snippet to existing doc");
 
         return Ok(());
@@ -385,7 +380,7 @@ pub async fn add_document(
 
     if let Some(id) = document_id {
         sqlx::query(
-            "INSERT INTO Document (document_id, document_name) VALUES ($1, $2) ON CONFLICT(document_id, document_name) DO NOTHING;",
+            "INSERT INTO Document (document_id, document_name) VALUES ($1, $2) ON CONFLICT DO NOTHING;",
         )
         .bind(id)
         .bind(document_name.trim())
@@ -400,7 +395,9 @@ pub async fn add_document(
         .await?;
     }
 
-    add_snippet(db, snippet, document_name.trim()).await?;
+    for snippet in snippets {
+        add_snippet(db, &snippet, document_name.trim()).await?;
+    }
 
     Ok(())
 }

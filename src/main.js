@@ -1,6 +1,7 @@
 import Toastify from 'toastify-js'
 import { invoke } from '@tauri-apps/api/core';
 import { keybind_handler } from './config';
+import { rebuildFuse } from './search';
 
 const snippet_input = document.getElementById('snippet-input');
 const title_input = document.getElementById('title-input');
@@ -77,6 +78,8 @@ const sync_notes = () => {
         gravity: "bottom",
         position: "center"
       }).showToast()
+
+      rebuildFuse();
     })
     .catch((error) => {
       Toastify({

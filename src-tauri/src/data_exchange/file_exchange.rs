@@ -215,7 +215,6 @@ pub fn tcp_client(client_ip: String, data_path: &str) -> Result<()> {
     fs::create_dir_all(&tmp_dir)?;
 
     // save file
-    // create the `test_folder` or specify your own folder
     let path = Path::new(&tmp_dir).join(file_info.name);
 
     let remote_path = Path::new(&tmp_dir).join(REMOTE_DATA_NAME);
@@ -224,11 +223,14 @@ pub fn tcp_client(client_ip: String, data_path: &str) -> Result<()> {
 
     let mut new = fs::File::create(&path)?;
     new.write_all(&file_data)?;
-    fs::rename(path, remote_path)?;
+    fs::rename(path, &remote_path)?;
     println!("done saving remote file");
 
-    fs::copy(data_path, local_path)?;
+    fs::copy(data_path, &local_path)?;
     println!("local data copied to temp");
+
+    println!("Local Size: {:?}", fs::read(&local_path).iter().len());
+    println!("Remote Size: {:?}", fs::read(&remote_path).iter().len());
 
     Ok(())
 }
