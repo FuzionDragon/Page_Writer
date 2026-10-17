@@ -21,7 +21,6 @@ use crate::{
 // paths hard coded with current tauri identifier, need to remember to change this in the future
 pub const DATA_PATH: &str = "com.davidl.page-writer/data/data.db";
 pub const BACKUP_DATA_PATH: &str = "com.davidl.page-writer/data/data.db.bkp";
-const LOCAL_DATA_NAME: &str = "local_data.db";
 const REMOTE_DATA_NAME: &str = "remote_data.db";
 const ANDROID_APP_NAME: &str = "com.davidl.page_writer";
 
@@ -288,22 +287,16 @@ async fn sync_data() -> Result<String, Error> {
         Sqlite::create_database(&path).await?;
     }
 
-    let db = setup_db().await?;
+    let local_pool = setup_db().await?;
 
     println!(
         "All data before sync: {:?}",
-        sqlite_interface::load_all_documents(&db).await?
+        sqlite_interface::load_all_documents(&local_pool).await?
     );
 
     // problem child
     make_backup().await?;
 
-    let local_path = sysdirs::temp_dir()
-        .expect("Unable to find local data directory")
-        .join(LOCAL_DATA_NAME)
-        .into_os_string()
-        .into_string()
-        .unwrap();
     let remote_path = sysdirs::temp_dir()
         .expect("Unable to find local data directory")
         .join(REMOTE_DATA_NAME)
@@ -314,15 +307,11 @@ async fn sync_data() -> Result<String, Error> {
     println!("Send data");
     let mut response = data_exchange::search_devices(path).await?;
 
-    if !Sqlite::database_exists(&local_path).await.unwrap_or(false)
-        || !Sqlite::database_exists(&remote_path).await.unwrap_or(false)
-    {
-        println!("Local or remote database is missing");
+    if !Sqlite::database_exists(&remote_path).await.unwrap_or(false) {
+        println!("remote database is missing");
     } else {
-        println!("Local and remote databases exist, syncing data");
-        let local_pool = SqlitePool::connect(&local_path).await?;
+        println!("remote database exists, syncing data");
         let remote_pool = SqlitePool::connect(&remote_path).await?;
-        println!("Local Size After: {:?}", fs::read(&local_path).iter().len());
         println!(
             "Remote Size After: {:?}",
             fs::read(&remote_path).iter().len()
@@ -334,27 +323,14 @@ async fn sync_data() -> Result<String, Error> {
         // problem child
         database::sync_database(&local_pool, &remote_pool).await?;
 
-        // copy over data
-        let actual_path = sysdirs::data_local_dir()
-            .expect("Unable to find local data directory")
-            .join(DATA_PATH)
-            .into_os_string()
-            .into_string()
-            .unwrap();
-
-        fs::copy(&local_path, actual_path)?;
-
         response = "Data copied successfully".to_string();
     }
 
-    if fs::exists(&local_path)? {
-        fs::remove_file(local_path)?;
-    }
     if fs::exists(&remote_path)? {
         fs::remove_file(remote_path)?;
     }
 
-    let all_doc = sqlite_interface::load_all_documents(&db).await?;
+    let all_doc = sqlite_interface::load_all_documents(&local_pool).await?;
     println!("All documents: {:?}", all_doc);
 
     Ok(response)
