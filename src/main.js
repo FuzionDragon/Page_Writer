@@ -1,7 +1,7 @@
 import Toastify from 'toastify-js'
 import { invoke } from '@tauri-apps/api/core';
 import { keybind_handler } from './config';
-import { rebuildFuse } from './search';
+import { sync_notes, toggle_sync_menu } from './sync';
 
 const snippet_input = document.getElementById('snippet-input');
 const title_input = document.getElementById('title-input');
@@ -34,7 +34,7 @@ const submit = function() {
 }
 
 document.getElementById("submit-snippet").onclick = () => submit();
-document.getElementById("sync").onclick = () => sync_notes();
+document.getElementById("sync").onclick = () => toggle_sync_menu();
 
 title_input.onkeydown = function(e) {
   if ((e.key === 'ArrowDown' || e.key === 'ArrowRight') && title_input.selectionEnd === title_input.value.length) {
@@ -55,52 +55,8 @@ snippet_input.onkeydown = function(e) {
   }
 }
 
-const sync_notes = () => {
-  Toastify({
-    text: "Searching local network for devices running Page Writer...",
-    stopOnFocus: true,
-    gravity: "bottom",
-    position: "center"
-  }).showToast();
-  // needs to be replaced by different function carrying out both
-  invoke("sync_data")
-    .then((response) => {
-      Toastify({
-        text: "Response: " + response,
-        stopOnFocus: true,
-        gravity: "bottom",
-        position: "center"
-      }).showToast()
-      console.log(response);
-      Toastify({
-        text: "No error with sync_data",
-        stopOnFocus: true,
-        gravity: "bottom",
-        position: "center"
-      }).showToast()
-
-      rebuildFuse();
-    })
-    .catch((error) => {
-      Toastify({
-        text: "Error: " + error,
-        stopOnFocus: true,
-        gravity: "bottom",
-        position: "center"
-      }).showToast()
-      console.log(error);
-    }
-    );
-}
 
 window.onkeydown = function(e) {
-  //  Toastify({
-  //    text: "Keydown: " + e.key,
-  //    stopOnFocus: true,
-  //    gravity: "bottom",
-  //    position: "center"
-  //  }).showToast()
-
   if (keybind_handler(e, "submit_snippet")) {
     submit();
   }
@@ -108,6 +64,6 @@ window.onkeydown = function(e) {
     window.location.href = "./view.html";
   }
   if (keybind_handler(e, "sync_notes")) {
-    sync_notes();
+    toggle_sync_menu();
   }
 }

@@ -216,9 +216,6 @@ pub async fn sync_database(local_db: &SqlitePool, remote_db: &SqlitePool) -> Res
         }
     }
 
-    let local_document = sqlite_interface::load_all_documents(&local_db).await?;
-    println!("Local Document: {:?}", local_document);
-
     Ok(())
 }
 
@@ -234,8 +231,6 @@ async fn sync_document(
     // if an ID doesn't exist for a remote snippet, then the local version of the snippet must have
     // been deleted. If remote snippet local snippet ID doesn't exist on remote, then prioritise
     // maintaining data
-    println!("Local: {:?}", local_document);
-    println!("Remote: {:?}", remote_document);
 
     if local_document.snippets.is_empty() && remote_document.snippets.is_empty() {
         return Ok(());

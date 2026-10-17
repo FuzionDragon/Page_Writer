@@ -263,6 +263,18 @@ textarea {
   display: none;
 }
 
+.overlay-sync-menu {
+  @include overlay;
+  @include border;
+  padding: 1em;
+  top: 40%;
+  text-align: center;
+  justify-content: left;
+  align-content: center;
+  align-items: center;
+  display: none;
+}
+
 .overlay-snippet-context {
   @include overlay;
   @include border;
@@ -393,6 +405,9 @@ textarea {
     bottom: auto;
   }
   #overlay-document-picker {
+    top: 20%;
+  }
+  #overlay-sync-menu {
     top: 20%;
   }
 }

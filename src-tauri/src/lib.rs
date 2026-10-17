@@ -289,12 +289,6 @@ async fn sync_data() -> Result<String, Error> {
 
     let local_pool = setup_db().await?;
 
-    println!(
-        "All data before sync: {:?}",
-        sqlite_interface::load_all_documents(&local_pool).await?
-    );
-
-    // problem child
     make_backup().await?;
 
     let remote_path = sysdirs::temp_dir()
@@ -312,15 +306,10 @@ async fn sync_data() -> Result<String, Error> {
     } else {
         println!("remote database exists, syncing data");
         let remote_pool = SqlitePool::connect(&remote_path).await?;
-        println!(
-            "Remote Size After: {:?}",
-            fs::read(&remote_path).iter().len()
-        );
 
         sqlite_interface::init(&local_pool).await?;
         sqlite_interface::init(&remote_pool).await?;
 
-        // problem child
         database::sync_database(&local_pool, &remote_pool).await?;
 
         response = "Data copied successfully".to_string();
@@ -330,10 +319,32 @@ async fn sync_data() -> Result<String, Error> {
         fs::remove_file(remote_path)?;
     }
 
-    let all_doc = sqlite_interface::load_all_documents(&local_pool).await?;
-    println!("All documents: {:?}", all_doc);
-
     Ok(response)
+}
+
+#[tauri::command]
+fn load_backup() -> Result<String, Error> {
+    let path = sysdirs::data_local_dir()
+        .expect("Unable to find local data directory")
+        .join(DATA_PATH)
+        .into_os_string()
+        .into_string()
+        .unwrap();
+
+    let backup_path = sysdirs::data_local_dir()
+        .expect("Unable to find local data directory")
+        .join(BACKUP_DATA_PATH)
+        .into_os_string()
+        .into_string()
+        .unwrap();
+
+    if fs::exists(&path)? && fs::exists(&backup_path)? {
+        fs::copy(path, backup_path)?;
+    } else {
+        return Ok("Active or backup  database files missing".to_string());
+    }
+
+    Ok("Success".to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -356,6 +367,7 @@ pub fn run() {
             delete_snippet,
             export_all_documents,
             sync_data,
+            load_backup,
             print,
         ])
         .run(tauri::generate_context!())

@@ -84,8 +84,6 @@ export const rebuildFuse = async () => {
   const corpus = await invoke('load_snippets')
     .catch((error) => console.log("error caught:" + error));
 
-  console.log(JSON.stringify(corpus));
-
   localStorage['corpus'] = JSON.stringify(corpus);
 
   fuse = new Fuse(Object.keys(corpus), {

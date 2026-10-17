@@ -224,7 +224,5 @@ pub fn tcp_client(client_ip: String, data_path: &str) -> Result<()> {
     fs::rename(path, &remote_path)?;
     println!("done saving remote file");
 
-    println!("Remote Size: {:?}", fs::read(&remote_path).iter().len());
-
     Ok(())
 }
