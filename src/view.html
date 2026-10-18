@@ -1,53 +1,55 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="stylesheet" href="./style.scss" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Page Compiler</title>
-    <script type="module" src="./config.js" defer></script>
-    <script type="module" src="./view.js" defer></script>
-    <script type="module" src="./search.js" defer></script>
-    <style>
-      .logo.vanilla:hover {
-        filter: drop-shadow(0 0 2em #ffe21c);
-      }
-    </style>
-  </head>
 
-  <body id="view">
-    <div id="navbar">
-      <div id="centernav">
-        <button id="current_document" type="button">None</button>
-      </div>
-      <div id="bottomcenternav">
-        <button id="add_snippet_toggle" type="button">Add</button>
-      </div>
-      <div class="overlay-snippet-context" id="snippet-context">
-        <button id="update_snippet" type="button">Update</button>
-        <button id="move_snippet" type="button">Move</button>
-        <button id="delete_snippet" type="button">Delete</button>
-      </div>
-      <div class="overlay-snippet-input" id="snippet-add">
-        <textarea id="snippet-input" rows="16"></textarea>
-        <button id="submit-snippet" type="button">Submit</button>
-      </div>
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="./style.scss" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Page Compiler</title>
+  <script type="module" src="./config.js" defer></script>
+  <script type="module" src="./view.js" defer></script>
+  <script type="module" src="./search.js" defer></script>
+  <style>
+    .logo.vanilla:hover {
+      filter: drop-shadow(0 0 2em #ffe21c);
+    }
+  </style>
+</head>
+
+<body id="view">
+  <div id="navbar">
+    <div id="centernav">
+      <button id="current_document" type="button">None</button>
     </div>
-    <div id="leftnav">
-      <a href="./index.html">Submit</a>
+    <div id="bottomcenternav">
+      <button id="add_snippet_toggle" type="button">Add</button>
     </div>
-    <div id="rightnav">
-      <button id="marked_document" type="button">None</button>
+    <div class="overlay-snippet-context" id="snippet-context">
+      <button id="update_snippet" type="button">Update</button>
+      <button id="move_snippet" type="button">Move</button>
+      <button id="delete_snippet" type="button">Delete</button>
     </div>
-    <div id="bottomleftnav">
-      <button id="delete_document" type="button">Delete</button>
+    <div class="overlay-snippet-input" id="snippet-add">
+      <textarea id="snippet-input" rows="16"></textarea>
+      <button id="submit-snippet" type="button">Submit</button>
     </div>
-    <div id="bottomrightnav">
-      <button id="delete_current_document" type="button">Delete Current</button>
-    </div>
-    <div>
-      <h1 id="document_name">None</h1>
-      <div id="snippet"></div>
-    </div>
-  </body>
+  </div>
+  <div id="leftnav">
+    <a href="./index.html" class="button">Submit</a>
+  </div>
+  <div id="rightnav">
+    <button id="marked_document" type="button">None</button>
+  </div>
+  <div id="bottomleftnav">
+    <button id="delete_document" type="button">Delete</button>
+  </div>
+  <div id="bottomrightnav">
+    <button id="delete_current_document" type="button">Delete Current</button>
+  </div>
+  <div>
+    <h1 id="document_name">None</h1>
+    <div id="snippet"></div>
+  </div>
+</body>
+
 </html>

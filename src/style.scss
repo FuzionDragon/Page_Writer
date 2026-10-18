@@ -36,9 +36,7 @@ $mediaMaxWidth: 520px;
 }
 
 @mixin nav {
-  @include border;
   margin: 1em;
-  padding: 0.25em;
   text-align: left;
   z-index: 1;
   flex-grow: 2;
@@ -76,10 +74,11 @@ body {
 }
 
 button {
+  @include border;
+  padding: 0.5em;
   color: light-dark($background-color, $foreground-color);
   background-color: light-dark($foreground-color, $background-color);
   text-decoration: inherit;
-  border: none;
   font-size: 1em;
 
   &:hover {
@@ -87,11 +86,13 @@ button {
   }
 }
 
-a {
-  font-weight: 500;
+a.button {
+  @include border;
+  padding: 0.5em;
   color: light-dark($background-color, $foreground-color);
+  background-color: light-dark($foreground-color, $background-color);
   text-decoration: inherit;
-  padding: 5px;
+  font-size: 1em;
 
   &:hover {
     color: $highlight-color;
@@ -112,7 +113,7 @@ textarea {
 
 #leftnav {
   @include nav;
-  top: 0;
+  top: 0.5em;
   left: 0;
 }
 
@@ -236,6 +237,16 @@ textarea {
   display: hidden;
 }
 
+#sync_notes {
+  transform: scale(0.8);
+  margin: 0.2em;
+}
+
+#recover_notes {
+  transform: scale(0.8);
+  margin: 0.2em;
+}
+
 .card {
   @include border;
   margin: 1em;
@@ -268,6 +279,8 @@ textarea {
   @include border;
   padding: 1em;
   top: 40%;
+  height: 20%;
+  width: 40%;
   text-align: center;
   justify-content: left;
   align-content: center;
@@ -385,7 +398,7 @@ textarea {
     top: auto;
   }
   #leftnav {
-    bottom: 0;
+    bottom: 0.5em;
     top: auto;
   }
   #centernav {
