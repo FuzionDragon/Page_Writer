@@ -247,6 +247,11 @@ textarea {
   margin: 0.2em;
 }
 
+#manual_backup {
+  transform: scale(0.8);
+  margin: 0.2em;
+}
+
 .card {
   @include border;
   margin: 1em;
@@ -278,8 +283,8 @@ textarea {
   @include overlay;
   @include border;
   padding: 1em;
-  top: 40%;
-  height: 20%;
+  top: 32.5%;
+  height: 25%;
   width: 40%;
   text-align: center;
   justify-content: left;

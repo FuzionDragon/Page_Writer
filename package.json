@@ -18,5 +18,8 @@
     "sass-embedded": "^1.89.2",
     "toastify-js": "^1.12.0",
     "vite": "^7.0.4"
+  },
+  "dependencies": {
+    "@tauri-apps/plugin-dialog": "^2.8.3"
   }
 }
