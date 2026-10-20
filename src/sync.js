@@ -14,14 +14,17 @@ title.innerText = "Sync Menu";
 const syncButton = document.createElement('button');
 syncButton.innerText = "Sync Data Over Local Network";
 syncButton.id = "sync_notes";
+syncButton.onclick = () => toggleTimout(syncButton);
 
 const recoverButton = document.createElement('button');
 recoverButton.innerText = "Recover From Backup";
 recoverButton.id = "recover_notes";
+recoverButton.onclick = () => toggleTimout(recoverButton);
 
 const manualSaveButton = document.createElement('button');
 manualSaveButton.innerText = "Manual Backup";
 manualSaveButton.id = "manual_backup";
+manualSaveButton.onclick = () => toggleTimout(manualSaveButton);
 
 menu.appendChild(title);
 menu.appendChild(syncButton);
@@ -29,10 +32,6 @@ menu.appendChild(recoverButton);
 menu.appendChild(manualSaveButton);
 
 document.getElementById("navbar").appendChild(menu);
-
-syncButton.onclick = () => toggleTimout(syncButton);
-recoverButton.onclick = () => toggleTimout(recoverButton);
-manualSaveButton.onclick = () => toggleTimout(manualSaveButton);
 
 export const toggle_sync_menu = async () => {
   if (menu.style.display === "block") {
@@ -58,7 +57,6 @@ const toggleTimout = (btn) => {
       break;
     default:
       console.log("Invalid button");
-
       return;
   }
 

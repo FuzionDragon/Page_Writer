@@ -27,20 +27,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     .then((keybindings) => {
       if (keybindings !== null && keybinds !== localStorage["keybinds"]) {
         localStorage['keybinds'] = JSON.stringify(keybindings);
-        //        Toastify({
-        //          text: "Keybinds loaded and updated from config file",
-        //          stopOnFocus: true,
-        //          gravity: "bottom",
-        //          position: "center"
-        //        }).showToast();
       } else if (default_bindings !== localStorage["keybinds"]) {
         localStorage["keybinds"] = JSON.stringify(default_bindings);
-        //        Toastify({
-        //          text: "Keybinds loaded and updated from default_bindings, use Ctrl and H to toggle shortcuts menu",
-        //          stopOnFocus: true,
-        //          gravity: "bottom",
-        //          position: "center"
-        //        }).showToast();
       }
     })
     .catch((error) => {
@@ -94,13 +82,6 @@ export const toggle_shortcuts_menu = () => {
 }
 
 const parse_keybind = (keybind) => {
-  //  Toastify({
-  //    text: "Parsing keybind: " + keybind,
-  //    stopOnFocus: true,
-  //    gravity: "bottom",
-  //    position: "center"
-  //  }).showToast();
-
   const keys = keybind.split('+').map(key => key.trim().toLowerCase());
   const modifiers = keys.slice(0, -1);
   const key = keys[keys.length - 1];
@@ -117,86 +98,7 @@ const parse_keybind = (keybind) => {
 export const keybind_handler = (e, command) => {
   const data = localStorage.getItem("keybinds");
   let keybinds = data ? JSON.parse(data) : {};
-  //  Toastify({
-  //    text: "handing command: " + command + "checking binding: " + e,
-  //    stopOnFocus: true,
-  //    gravity: "bottom",
-  //    position: "center"
-  //  }).showToast();
-  //  if ((keybinds[command] === undefined) || (keybinds[command] === null)) {
-  //    switch (command) {
-  //      case "switch_menu":
-  //        keybinds["switch_menu"] = default_bindings["switch_menu"];
-  //        localStorage.setItem("keybinds", JSON.stringify(keybinds));
-  //        return (e.ctrlKey && e.key === "t")
-  //      case "submit_snippet":
-  //        keybinds["submit_snippet"] = default_bindings["submit_snippet"];
-  //        localStorage.setItem("keybinds", JSON.stringify(keybinds));
-  //        return (e.ctrlKey && e.key === "Enter")
-  //      case "search_document":
-  //        keybinds["search_document"] = default_bindings["search_document"];
-  //        localStorage.setItem("keybinds", JSON.stringify(keybinds));
-  //        return (e.ctrlKey && e.key === "f")
-  //      case "current_document_picker":
-  //        keybinds["current_document_picker"] = default_bindings["current_document_picker"];
-  //        localStorage.setItem("keybinds", JSON.stringify(keybinds));
-  //        return (e.ctrlKey && e.key === "e")
-  //      case "marked_document_picker":
-  //        keybinds["marked_document_picker"] = default_bindings["marked_document_picker"];
-  //        localStorage.setItem("keybinds", JSON.stringify(keybinds));
-  //        return (e.ctrlKey && e.key === "r")
-  //      case "delete_document_picker":
-  //        keybinds["delete_document_picker"] = default_bindings["delete_document_picker"];
-  //        localStorage.setItem("keybinds", JSON.stringify(keybinds));
-  //        return (e.ctrlKey && e.key === "d")
-  //      case "delete_current_document":
-  //        keybinds["delete_current_document"] = default_bindings["delete_current_document"];
-  //        localStorage.setItem("keybinds", JSON.stringify(keybinds));
-  //        return (e.ctrlKey && e.key === "Delete")
-  //      case "move_selected_snippet":
-  //        keybinds["move_selected_snippet"] = default_bindings["move_selected_snippet"];
-  //        localStorage.setItem("keybinds", JSON.stringify(keybinds));
-  //        return (e.ctrlKey && e.key === "f")
-  //      case "delete_selected_snippet":
-  //        keybinds["delete_selected_snippet"] = default_bindings["delete_selected_snippet"];
-  //        localStorage.setItem("keybinds", JSON.stringify(keybinds));
-  //        return (e.key === "Delete")
-  //      case "update_selected_snippet":
-  //        keybinds["update_selected_snippet"] = default_bindings["update_selected_snippet"];
-  //        localStorage.setItem("keybinds", JSON.stringify(keybinds));
-  //        return (e.ctrlKey && e.key === "Enter")
-  //      case "toggle_add_snippet":
-  //        keybinds["toggle_add_snippet"] = default_bindings["toggle_add_snippet"];
-  //        localStorage.setItem("keybinds", JSON.stringify(keybinds));
-  //        return (e.ctrlKey && e.key === "q")
-  //      case "add_snippet":
-  //        keybinds["add_snippet"] = default_bindings["add_snippet"];
-  //        localStorage.setItem("keybinds", JSON.stringify(keybinds));
-  //        return (e.ctrlKey && e.key === "Enter")
-  //      case "toggle_shortcuts_menu":
-  //        console.log("Pressed toggle_shortcuts_menu")
-  //        keybinds["toggle_shortcuts_menu"] = default_bindings["toggle_shortcuts_menu"];
-  //        localStorage.setItem("keybinds", JSON.stringify(keybinds));
-  //        return (e.ctrlKey && e.key === "h")
-  //      case "scroll_top":
-  //        console.log("Pressed scroll_top")
-  //        keybinds["scroll_top"] = default_bindings["scroll_top"];
-  //        localStorage.setItem("keybinds", JSON.stringify(keybinds));
-  //        return (e.key === "g")
-  //      case "scroll_bottom":
-  //        console.log("Pressed scroll_bottom")
-  //        keybinds["scroll_bottom"] = default_bindings["scroll_bottom"];
-  //        localStorage.setItem("keybinds", JSON.stringify(keybinds));
-  //        return (e.ctrlKey && e.key === "g")
-  //      case "sync_notes":
-  //        console.log("Pressed sync_notes")
-  //        keybinds["sync_notes"] = default_bindings["sync_notes"];
-  //        localStorage.setItem("keybinds", JSON.stringify(keybinds));
-  //        return (e.ctrlKey && e.key == "s")
-  //      default:
-  //        break;
-  //    }
-  //  } else {
+
   const parsed_keybind = parse_keybind(keybinds[command]);
 
   return (
@@ -206,5 +108,4 @@ export const keybind_handler = (e, command) => {
     (parsed_keybind.meta === e.metaKey) &&
     (parsed_keybind.key.toUpperCase() === e.key.toUpperCase())
   );
-  //}
 }

@@ -1,7 +1,7 @@
 import Toastify from 'toastify-js'
 import { invoke } from '@tauri-apps/api/core';
 import { keybind_handler } from './config';
-import { sync_notes, toggle_sync_menu } from './sync';
+import { toggle_sync_menu } from './sync';
 
 const snippet_input = document.getElementById('snippet-input');
 const title_input = document.getElementById('title-input');

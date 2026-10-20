@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
 
 const CONFIGPATH: &str = "PageWriter/config.toml";
-const ANDROID_APP_NAME: &str = "com.davidl.page_writer";
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Settings {

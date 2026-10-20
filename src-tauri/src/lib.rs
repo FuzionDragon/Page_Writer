@@ -22,7 +22,6 @@ use crate::{
 pub const DATA_PATH: &str = "com.davidl.page-writer/data/data.db";
 pub const BACKUP_DATA_PATH: &str = "com.davidl.page-writer/data/data.db.bkp";
 const REMOTE_DATA_NAME: &str = "remote_data.db";
-const ANDROID_APP_NAME: &str = "com.davidl.page_writer";
 
 #[derive(Debug, thiserror::Error)]
 enum Error {
@@ -189,7 +188,7 @@ async fn load_document(document_name: String) -> Result<Option<DocumentSnippet>,
     Ok(result)
 }
 
-// Only usable on PC, must have export path defined in toml, but default is in
+// Only usable on PC so far, must have export path defined in toml, but default is in
 // '~/Documents/PageWriter'
 #[tauri::command]
 async fn export_all_documents() -> Result<String, Error> {
