@@ -14,17 +14,17 @@ title.innerText = "Sync Menu";
 const syncButton = document.createElement('button');
 syncButton.innerText = "Sync Data Over Local Network";
 syncButton.id = "sync_notes";
-syncButton.onclick = () => toggleTimout(syncButton);
+syncButton.onclick = () => toggleTimeout(syncButton);
 
 const recoverButton = document.createElement('button');
 recoverButton.innerText = "Recover From Backup";
 recoverButton.id = "recover_notes";
-recoverButton.onclick = () => toggleTimout(recoverButton);
+recoverButton.onclick = () => toggleTimeout(recoverButton);
 
 const manualSaveButton = document.createElement('button');
 manualSaveButton.innerText = "Manual Backup";
 manualSaveButton.id = "manual_backup";
-manualSaveButton.onclick = () => toggleTimout(manualSaveButton);
+manualSaveButton.onclick = () => toggleTimeout(manualSaveButton);
 
 menu.appendChild(title);
 menu.appendChild(syncButton);
@@ -41,7 +41,7 @@ export const toggle_sync_menu = async () => {
   }
 }
 
-const toggleTimout = (btn) => {
+const toggleTimeout = (btn) => {
   const innerText = btn.innerText;
   console.log(innerText);
 
@@ -62,7 +62,7 @@ const toggleTimout = (btn) => {
 
   btn.innerText = "Confirm Operation?"
   setTimeout(function() {
-    btn.onclick = () => toggleTimout(btn);
+    btn.onclick = () => toggleTimeout(btn);
     btn.innerText = innerText;
 
     console.log("Timeout, reseting button");
@@ -106,7 +106,7 @@ export const sync_notes = function() {
     }
     );
 
-  syncButton.onclick = () => toggleTimout(self);
+  syncButton.onclick = () => toggleTimeout(self);
   syncButton.innerText = "Sync Data Over Local Network";
 }
 
@@ -146,12 +146,12 @@ export const recover_notes = function() {
     }
     );
 
-  recoverButton.onclick = () => toggleTimout(self);
+  recoverButton.onclick = () => toggleTimeout(self);
   recoverButton.innerText = "Recover From Backup";
 }
 
 export const manual_backup = function() {
   console.log("Manual backup");
-  manualSaveButton.onclick = () => toggleTimout(self);
+  manualSaveButton.onclick = () => toggleTimeout(self);
   manualSaveButton.innerText = "Manual Backup";
 }

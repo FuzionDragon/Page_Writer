@@ -120,7 +120,7 @@ pub async fn load_all_documents(db: &SqlitePool) -> Result<Vec<DocumentSnippet>>
 pub async fn load_snippets(db: &SqlitePool, document_id: i32) -> Result<Vec<Snippet>> {
     let snippets = sqlx::query_as::<_, Snippet>(
         r#"
-        SELECT snippet_id, snippet, Document.document_id, Document.document_name FROM Snippet
+        SELECT snippet_id, snippet, Document.document_id, Document.document_name, last_modified FROM Snippet
         JOIN Document ON Snippet.document_id == Document.document_id
         WHERE Document.document_id = $1;
       "#,
@@ -139,7 +139,7 @@ pub async fn fetch_document(
 ) -> Result<Option<DocumentSnippet>> {
     let snippets = sqlx::query_as::<_, Snippet>(
         r#"
-        SELECT snippet_id, snippet, last_modified, Document.document_id, Document.document_name FROM Snippet
+        SELECT snippet_id, snippet, Document.document_id, Document.document_name, last_modified FROM Snippet
         JOIN Document ON Snippet.document_id == Document.document_id
         WHERE Document.document_name = $1;
       "#,
@@ -171,7 +171,7 @@ pub async fn fetch_document(
 pub async fn delete_snippet(db: &SqlitePool, snippet_id: i32) -> Result<()> {
     let document_id = sqlx::query_as::<_, Snippet>(
         r#"
-    SELECT snippet_id, snippet, Document.document_id, Document.document_name FROM Snippet
+    SELECT snippet_id, snippet, Document.document_id, Document.document_name, last_modified FROM Snippet
     JOIN Document ON Snippet.document_id == Document.document_id
     WHERE snippet_id = $1;
     "#,
@@ -188,7 +188,7 @@ pub async fn delete_snippet(db: &SqlitePool, snippet_id: i32) -> Result<()> {
 
     let is_empty = sqlx::query_as::<_, Snippet>(
         r#"
-          SELECT snippet_id, snippet, Document.document_id, Document.document_name FROM Snippet
+          SELECT snippet_id, snippet, Document.document_id, Document.document_name, last_modified FROM Snippet
           JOIN Document ON Snippet.document_id == Document.document_id
           WHERE Document.document_id = $1;
         "#,
@@ -212,7 +212,7 @@ pub async fn delete_snippet(db: &SqlitePool, snippet_id: i32) -> Result<()> {
 pub async fn delete_document(db: &SqlitePool, document_name: &str) -> Result<()> {
     let snippets = sqlx::query_as::<_, Snippet>(
         r#"
-        SELECT snippet_id, snippet, Document.document_id, Document.document_name FROM Snippet
+        SELECT snippet_id, snippet, Document.document_id, Document.document_name, last_modified FROM Snippet
         JOIN Document ON Snippet.document_id == Document.document_id
         WHERE Document.document_name = $1;
       "#,

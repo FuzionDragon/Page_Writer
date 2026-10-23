@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (document.body.id === "view") {
     document.getElementById("delete_document").onclick = () => deleteDocument();
-    document.getElementById("delete_current_document").onclick = () => deleteCurrentDocument();
+    document.getElementById("delete_current_document").onclick = () => toggleTimeout(self);
   }
 
   if (document.body.id === "submit") {
@@ -143,6 +143,10 @@ document.onkeydown = function(e) {
   if (keybind_handler(e, "toggle_shortcuts_menu")) {
     console.log("Toggling shortcuts-menu");
     toggle_shortcuts_menu();
+  }
+  if (document.body.id === "view" && keybind_handler(e, "delete_current_document")) {
+    console.log("Delete current document");
+    deleteCurrentDocument();
   }
 }
 
@@ -425,23 +429,37 @@ const delete_document_bind = (e) => {
   if (e.key === "Enter") {
     if (results.length > 0 && Array.isArray(results)) {
       const document_name = results[0].item;
-      invoke("delete_document", { documentName: document_name });
-      if (document.body.id === "view" && localStorage['current_document'] === document_name) {
-        document.getElementById("snippet").innerHTML = "";
-        document.getElementById("document_name").innerText = "None";
-        document.getElementById("current_document").innerText = "None";
-        localStorage['current_document'] = "None";
-      }
-      results = results.filter(i => i.item !== document_name);
-      fuse.remove((item => {
-        item.title === document_name;
-      }));
-      Toastify({
-        text: "Moved snippet successfully to document: " + document_name,
-        stopOnFocus: true,
-        gravity: "bottom",
-        position: "center"
-      }).showToast()
+      invoke("delete_document", { documentName: document_name })
+        .then(() => {
+          if (document.body.id === "view" && localStorage['current_document'] === document_name) {
+            document.getElementById("snippet").innerHTML = "";
+            document.getElementById("document_name").innerText = "None";
+            document.getElementById("current_document").innerText = "None";
+
+            localStorage['current_document'] = "None";
+
+            results = results.filter(i => i.item !== document_name);
+            fuse.remove((item => {
+              item.title === document_name;
+            }));
+
+            rebuildFuse();
+          }
+          Toastify({
+            text: "Moved snippet successfully to document: " + document_name,
+            stopOnFocus: true,
+            gravity: "bottom",
+            position: "center"
+          }).showToast()
+        })
+        .catch((error) => {
+          Toastify({
+            text: "Error caught: " + error,
+            stopOnFocus: true,
+            gravity: "bottom",
+            position: "center"
+          }).showToast();
+        });
     } else {
       Toastify({
         text: "No results found",
@@ -459,19 +477,38 @@ const delete_document_bind = (e) => {
 const deleteCurrentDocument = () => {
   let document_name = localStorage['current_document'];
   if (document_name !== "None") {
-    invoke("delete_document", { documentName: document_name });
-    if (document.body.id === "view") {
-      document.getElementById("snippet").innerHTML = "";
-      document.getElementById("document_name").innerText = "None";
-      document.getElementById("current_document").innerText = "None";
-    }
-    results = results.filter(i => i.item !== document_name);
+    invoke("delete_document", { documentName: document_name })
+      .then(() => {
+        if (document.body.id === "view") {
+          document.getElementById("snippet").innerHTML = "";
+          document.getElementById("document_name").innerText = "None";
+          document.getElementById("current_document").innerText = "None";
+
+          localStorage['current_document'] = "None";
+
+          results = results.filter(i => i.item !== document_name);
+          fuse.remove((item => {
+            item.title === document_name;
+          }));
+
+          rebuildFuse();
+        }
+        Toastify({
+          text: "Current document deleted successfully",
+          stopOnFocus: true,
+          gravity: "bottom",
+          position: "center"
+        }).showToast();
+      }).catch((error) => {
+        Toastify({
+          text: "Error caught: " + error,
+          stopOnFocus: true,
+          gravity: "bottom",
+          position: "center"
+        }).showToast();
+      });
     console.log(fuse);
     console.log(document_name);
-    fuse.remove((item => {
-      item === document_name;
-    }));
-    localStorage['current_document'] = "None";
     Toastify({
       text: "Deleted current document: " + document_name,
       stopOnFocus: true,
@@ -488,4 +525,17 @@ const deleteCurrentDocument = () => {
   }
 
   document.getElementById("document_input").value = "";
+  document.getElementById("delete_current_document").onclick = () => toggleTimeout(self);
+}
+
+const toggleTimeout = (btn) => {
+  btn.onclick = () => deleteCurrentDocument();
+
+  btn.innerText = "Confirm Operation?"
+  setTimeout(function() {
+    btn.onclick = () => toggleTimeout(btn);
+    btn.innerText = "Delete Current";
+
+    console.log("Timeout, reseting button");
+  }, 5000);
 }

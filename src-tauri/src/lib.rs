@@ -14,14 +14,24 @@ use crate::{
     database::{sqlite_interface, CorpusSnippets, DocumentSnippet},
 };
 
-// need to change path to prevent having multiple cache / storage directories on Linux
-//pub const DATA_PATH: &str = "PageWriter/data.db";
-//pub const BACKUP_DATA_PATH: &str = "PageWriter/data.db.bkp";
-
 // paths hard coded with current tauri identifier, need to remember to change this in the future
 pub const DATA_PATH: &str = "com.davidl.page-writer/data/data.db";
 pub const BACKUP_DATA_PATH: &str = "com.davidl.page-writer/data/data.db.bkp";
 const REMOTE_DATA_NAME: &str = "remote_data.db";
+
+//
+// Unit Test Block
+//
+#[cfg(test)]
+mod tests {
+    const TEST_DATA_PATH: &str = "com.davidl.page-writer/data/test_data.db";
+    const TEST_BACKUP_DATA_PATH: &str = "com.davidl.page-writer/data/test_data.db.bkp";
+
+    use super::*;
+
+    #[test]
+    fn init_test() {}
+}
 
 #[derive(Debug, thiserror::Error)]
 enum Error {

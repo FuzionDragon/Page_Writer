@@ -217,3 +217,4 @@ const moveSnippet = (edit_card, id) => {
   document.getElementById("picker_action").innerText = "Move Snippet";
   document.getElementById("document_input").onkeydown = (e) => move_document_bind(e, id, edit_card);
 }
+
