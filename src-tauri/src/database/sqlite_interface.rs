@@ -401,3 +401,60 @@ pub async fn add_document(
 
     Ok(())
 }
+
+#[cfg(test)]
+pub async fn validate_schema(db: &SqlitePool) -> Result<bool> {
+    #[derive(Debug, FromRow, Clone)]
+    struct SqliteSchema {
+        name: String,
+        sql: String,
+    }
+    let document_schema = r#"CREATE TABLE Document (
+        document_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        document_name TEXT UNIQUE,
+        is_marked INTEGER,
+        UNIQUE (document_id, document_name)
+    )"#;
+    let snippet_schema = r#"CREATE TABLE Snippet (
+        snippet_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        snippet TEXT NOT NULL,
+        last_modified TEXT NOT NULL,
+        document_id INTEGER NOT NULL,
+        UNIQUE (snippet, document_id),
+        FOREIGN KEY (document_id)
+        REFERENCES Document (document_id)
+    )"#;
+
+    let document_query =
+        sqlx::query_as::<_, SqliteSchema>("SELECT name, sql FROM sqlite_schema WHERE name = $1;")
+            .bind("Document")
+            .fetch_optional(db)
+            .await?;
+
+    if let Some(schema) = document_query {
+        assert_eq!(
+            &schema.sql.split_whitespace().collect::<String>(),
+            &document_schema.split_whitespace().collect::<String>(),
+        );
+    } else {
+        return Ok(false);
+    }
+
+    let snippet_query =
+        sqlx::query_as::<_, SqliteSchema>("SELECT name, sql FROM sqlite_schema WHERE name = $1;")
+            .bind("Snippet")
+            .fetch_optional(db)
+            .await?;
+
+    if let Some(schema) = snippet_query {
+        assert_eq!(
+            &schema.sql.split_whitespace().collect::<String>(),
+            &snippet_schema.split_whitespace().collect::<String>(),
+        );
+    } else {
+        return Ok(false);
+    }
+
+    // makes use of Sqlites in built sqlite_schema table
+    Ok(true)
+}

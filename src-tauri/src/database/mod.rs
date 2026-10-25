@@ -12,14 +12,14 @@ pub type Corpus = HashMap<String, String>;
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DocumentSnippet {
     document_id: i32,
-    document_name: String,
-    snippets: Vec<SnippetEntry>,
+    pub document_name: String,
+    pub snippets: Vec<SnippetEntry>,
 }
 
 #[derive(Deserialize, Serialize, sqlx::FromRow, Debug, Clone)]
 pub struct SnippetEntry {
     snippet_id: i32,
-    snippet: String,
+    pub snippet: String,
     // a stringified Instant
     last_modified: String,
 }

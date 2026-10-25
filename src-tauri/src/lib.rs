@@ -29,8 +29,143 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn init_test() {}
+    async fn test_cleanup() -> Result<()> {
+        let data_path = sysdirs::data_local_dir()
+            .expect("Unable to find local data directory")
+            .join(TEST_DATA_PATH)
+            .into_os_string()
+            .into_string()
+            .unwrap();
+
+        if fs::exists(&data_path)? {
+            //fs::remove_file(data_path)?;
+        }
+
+        let backup_path = sysdirs::data_local_dir()
+            .expect("Unable to find local data directory")
+            .join(TEST_BACKUP_DATA_PATH)
+            .into_os_string()
+            .into_string()
+            .unwrap();
+
+        if fs::exists(&backup_path)? {
+            fs::remove_file(backup_path)?;
+        }
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn setup_db_test() -> Result<(), Error> {
+        let db = setup_db(TEST_DATA_PATH).await?;
+
+        assert!(sqlite_interface::validate_schema(&db).await?);
+
+        let data_size = sqlite_interface::load_all_documents(&db).await?.len();
+        assert_eq!(data_size, 0);
+
+        test_cleanup().await?;
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn create_document_test(db: SqlitePool) -> Result<(), Error> {
+        sqlite_interface::init(&db).await?;
+
+        sqlite_interface::add_document(&db, None, "Test", vec!["First Snippet".to_string()])
+            .await?;
+
+        let data = sqlite_interface::load_all_documents(&db).await?;
+
+        assert_eq!(data.len(), 1);
+        assert_eq!(data[0].snippets.len(), 1);
+        assert_eq!(data[0].snippets[0].snippet, "First Snippet".to_string());
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn append_onto_document_test(db: SqlitePool) -> Result<(), Error> {
+        sqlite_interface::init(&db).await?;
+
+        sqlite_interface::add_document(&db, None, "Test", vec!["First Snippet".to_string()])
+            .await?;
+
+        sqlite_interface::add_document(&db, None, "Test", vec!["Second Snippet".to_string()])
+            .await?;
+
+        let data = sqlite_interface::load_all_documents(&db).await?;
+        assert_eq!(data.len(), 1);
+        assert_eq!(data[0].snippets.len(), 2);
+
+        for snippet in &data[0].snippets {
+            if snippet.snippet != "First Snippet" && snippet.snippet != "Second Snippet" {
+                panic!("Mismatched snippet name found.");
+            }
+        }
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn fetch_document_test(db: SqlitePool) -> Result<(), Error> {
+        sqlite_interface::init(&db).await?;
+
+        sqlite_interface::add_document(&db, None, "Test", vec!["First Snippet".to_string()])
+            .await?;
+
+        let document = sqlite_interface::fetch_document(&db, "Test").await?;
+        assert!(document.is_some());
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn delete_document_test(db: SqlitePool) -> Result<(), Error> {
+        sqlite_interface::init(&db).await?;
+
+        sqlite_interface::add_document(&db, None, "Test", vec!["First Snippet".to_string()])
+            .await?;
+
+        assert_eq!(sqlite_interface::load_all_documents(&db).await?.len(), 1);
+
+        sqlite_interface::delete_document(&db, "Test").await?;
+
+        assert_eq!(sqlite_interface::load_all_documents(&db).await?.len(), 0);
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn fetch_nonexistent_document_test(db: SqlitePool) -> Result<(), Error> {
+        sqlite_interface::init(&db).await?;
+
+        let document = sqlite_interface::fetch_document(&db, "Test").await?;
+        assert!(document.is_none());
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn fetch_marked_document_test(db: SqlitePool) -> Result<(), Error> {
+        sqlite_interface::init(&db).await?;
+
+        assert!(sqlite_interface::fetch_marked_document(&db)
+            .await?
+            .is_none());
+
+        sqlite_interface::add_document(&db, None, "Test", vec!["First Snippet".to_string()])
+            .await?;
+
+        sqlite_interface::set_marked_document(&db, "Test").await?;
+
+        assert!(sqlite_interface::fetch_marked_document(&db)
+            .await?
+            .is_some());
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -66,19 +201,19 @@ async fn prepare_android_paths() -> Result<()> {
     Ok(())
 }
 
-async fn setup_db() -> Result<SqlitePool, Error> {
-    let data_path = sysdirs::data_local_dir()
+async fn setup_db(data_path: &str) -> Result<SqlitePool, Error> {
+    let data_path_dirs = sysdirs::data_local_dir()
         .expect("Unable to find local data directory")
         .join("com.davidl.page-writer/data")
         .into_os_string()
         .into_string()
         .unwrap();
 
-    fs::create_dir_all(&data_path)?;
+    fs::create_dir_all(&data_path_dirs)?;
 
     let path = sysdirs::data_local_dir()
         .expect("Unable to find local data directory")
-        .join(DATA_PATH)
+        .join(data_path)
         .into_os_string()
         .into_string()
         .unwrap();
@@ -95,20 +230,20 @@ async fn setup_db() -> Result<SqlitePool, Error> {
     Ok(db)
 }
 
-async fn make_backup() -> Result<String, Error> {
+async fn make_backup(data_path: &str, backup_data_path: &str) -> Result<String, Error> {
     #[cfg(target_os = "android")]
     prepare_android_paths().await?;
 
     let path = sysdirs::data_local_dir()
         .expect("Unable to find local data directory")
-        .join(DATA_PATH)
+        .join(data_path)
         .into_os_string()
         .into_string()
         .unwrap();
 
     let backup_path = sysdirs::data_local_dir()
         .expect("Unable to find local data directory")
-        .join(BACKUP_DATA_PATH)
+        .join(backup_data_path)
         .into_os_string()
         .into_string()
         .unwrap();
@@ -160,7 +295,7 @@ async fn load_settings() -> Result<Option<Settings>, Error> {
 
 #[tauri::command]
 async fn submit(snippet: String, title: String) -> Result<(), Error> {
-    let db = setup_db().await?;
+    let db = setup_db(DATA_PATH).await?;
 
     if title.is_empty() {
         submit_snippet(&snippet, None, &db).await?;
@@ -173,7 +308,7 @@ async fn submit(snippet: String, title: String) -> Result<(), Error> {
 
 #[tauri::command]
 async fn update(snippet_id: i32, snippet: String) -> Result<(), Error> {
-    let db = setup_db().await?;
+    let db = setup_db(DATA_PATH).await?;
 
     update_snippet(&db, snippet_id, &snippet).await?;
 
@@ -182,7 +317,7 @@ async fn update(snippet_id: i32, snippet: String) -> Result<(), Error> {
 
 #[tauri::command]
 async fn load_snippets() -> Result<CorpusSnippets, Error> {
-    let db = setup_db().await?;
+    let db = setup_db(DATA_PATH).await?;
 
     let result = sqlite_interface::load_corpus_snippets(&db).await?;
 
@@ -191,7 +326,7 @@ async fn load_snippets() -> Result<CorpusSnippets, Error> {
 
 #[tauri::command]
 async fn load_document(document_name: String) -> Result<Option<DocumentSnippet>, Error> {
-    let db = setup_db().await?;
+    let db = setup_db(DATA_PATH).await?;
 
     let result = sqlite_interface::fetch_document(&db, &document_name).await?;
 
@@ -202,7 +337,7 @@ async fn load_document(document_name: String) -> Result<Option<DocumentSnippet>,
 // '~/Documents/PageWriter'
 #[tauri::command]
 async fn export_all_documents() -> Result<String, Error> {
-    let db = setup_db().await?;
+    let db = setup_db(DATA_PATH).await?;
 
     let corpus = sqlite_interface::load_corpus(&db).await?;
 
@@ -231,7 +366,7 @@ async fn print(text: String) -> Result<(), Error> {
 
 #[tauri::command]
 async fn move_snippet(snippet_id: i32, document_name: String) -> Result<(), Error> {
-    let db = setup_db().await?;
+    let db = setup_db(DATA_PATH).await?;
 
     sqlite_interface::move_snippet(&db, snippet_id, &document_name).await?;
 
@@ -240,7 +375,7 @@ async fn move_snippet(snippet_id: i32, document_name: String) -> Result<(), Erro
 
 #[tauri::command]
 async fn fetch_marked_document() -> Result<Option<String>, Error> {
-    let db = setup_db().await?;
+    let db = setup_db(DATA_PATH).await?;
 
     let marked_document = sqlite_interface::fetch_marked_document(&db).await?;
 
@@ -253,7 +388,7 @@ async fn fetch_marked_document() -> Result<Option<String>, Error> {
 
 #[tauri::command]
 async fn mark_document(document_name: String) -> Result<(), Error> {
-    let db = setup_db().await?;
+    let db = setup_db(DATA_PATH).await?;
 
     sqlite_interface::set_marked_document(&db, &document_name).await?;
 
@@ -262,7 +397,7 @@ async fn mark_document(document_name: String) -> Result<(), Error> {
 
 #[tauri::command]
 async fn delete_document(document_name: String) -> Result<(), Error> {
-    let db = setup_db().await?;
+    let db = setup_db(DATA_PATH).await?;
 
     println!("{}", &document_name);
     sqlite_interface::delete_document(&db, &document_name).await?;
@@ -272,7 +407,7 @@ async fn delete_document(document_name: String) -> Result<(), Error> {
 
 #[tauri::command]
 async fn delete_snippet(snippet_id: i32) -> Result<(), Error> {
-    let db = setup_db().await?;
+    let db = setup_db(DATA_PATH).await?;
 
     sqlite_interface::delete_snippet(&db, snippet_id).await?;
 
@@ -296,9 +431,9 @@ async fn sync_data() -> Result<String, Error> {
         Sqlite::create_database(&path).await?;
     }
 
-    let local_pool = setup_db().await?;
+    let local_pool = setup_db(DATA_PATH).await?;
 
-    make_backup().await?;
+    make_backup(DATA_PATH, BACKUP_DATA_PATH).await?;
 
     let remote_path = sysdirs::temp_dir()
         .expect("Unable to find local data directory")
